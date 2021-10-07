@@ -15,7 +15,7 @@ Ability to do AXFR, usually permitted with `allow-transfer` in Bind 9 or with `a
 
 ## Installation
 
-There are two ways of installing axfr2hosts
+There are two ways of installing axfr2hosts:
 
 ### Manual
 
