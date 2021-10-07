@@ -1,6 +1,6 @@
 # axfr2hosts
 
-[![GitHub license](https://img.shields.io/github/license/dkorunic/axfr2hosts.svg)](https://github.com/dkorunic/axfr2hosts/blob/master/LICENSE.txt)
+[![GitHub license](https://img.shields.io/github/license/dkorunic/axfr2hosts.svg)](https://github.com/dkorunic/axfr2hosts/blob/master/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/dkorunic/axfr2hosts.svg)](https://github.com/dkorunic/axfr2hosts/releases/latest)
 [![codebeat badge](https://codebeat.co/badges/b535ef48-ba10-413e-81f0-dcb5a17e01c4)](https://codebeat.co/projects/github-com-dkorunic-axfr2hosts-main)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dkorunic/axfr2hosts)](https://goreportcard.com/report/github.com/dkorunic/axfr2hosts)
