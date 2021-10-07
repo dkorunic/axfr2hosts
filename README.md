@@ -34,9 +34,9 @@ Usage: ./axfr2hosts [options] zone server[:port]
   -cidr_list string
     	Use only targets from CIDR whitelist (comma separated list)
   -greedy_cname
-    	Resolve out-of-zone CNAME targets (default true) (default true)
+    	Resolve out-of-zone CNAME targets (default true)
   -ignore_star
-    	Ignore wildcard records (default true) (default true)
+    	Ignore wildcard records (default true)
 ```
 
 Typical use case would be:

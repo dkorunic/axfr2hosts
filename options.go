@@ -30,8 +30,8 @@ import (
 )
 
 var (
-	greedyCNAME = flag.Bool("greedy_cname", true, "Resolve out-of-zone CNAME targets (default true)")
-	ignoreStar  = flag.Bool("ignore_star", true, "Ignore wildcard records (default true)")
+	greedyCNAME = flag.Bool("greedy_cname", true, "Resolve out-of-zone CNAME targets")
+	ignoreStar  = flag.Bool("ignore_star", true, "Ignore wildcard records")
 	cidrString  = flag.String("cidr_list", "", "Use only targets from CIDR whitelist (comma separated list)")
 )
 
