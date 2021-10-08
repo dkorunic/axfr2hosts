@@ -33,19 +33,23 @@ var (
 	greedyCNAME = flag.Bool("greedy_cname", true, "Resolve out-of-zone CNAME targets")
 	ignoreStar  = flag.Bool("ignore_star", true, "Ignore wildcard records")
 	cidrString  = flag.String("cidr_list", "", "Use only targets from CIDR whitelist (comma separated list)")
+	stripDomain = flag.Bool("strip_domain", false, "Strip domain name from hosts entries")
 )
 
 const (
 	endingDot     = "."
 	dnsPort       = "53"
+	dnsPrefix     = "@"
 	cidrSeparator = ","
 	portSeparator = ":"
+	projectHome   = "https://github.com/dkorunic/axfr2hosts"
 )
 
 func parseFlags() ([]string, string, []string) {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %v [options] zone [zone2 [zone3 ...]] @server[:port]\n", os.Args[0])
 		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\nFor more information visit project home: %v\n", projectHome)
 		os.Exit(0)
 	}
 
@@ -62,8 +66,8 @@ func parseFlags() ([]string, string, []string) {
 
 	for _, arg := range flag.Args() {
 		// nameserver starts with '@'
-		if arg[0] == '@' {
-			server = arg[1:]
+		if strings.HasPrefix(arg, dnsPrefix) {
+			server = strings.TrimPrefix(arg, dnsPrefix)
 
 			// make sure server is in server:port format
 			if !strings.Contains(server, portSeparator) {
@@ -73,15 +77,9 @@ func parseFlags() ([]string, string, []string) {
 			continue
 		}
 
-		// otherwise it is a zone name
-		zoneName := arg
-
-		// make sure zone always ends with dot
-		if !strings.HasSuffix(zoneName, endingDot) {
-			zoneName = strings.Join([]string{zoneName, endingDot}, "")
-		}
-
-		zones = append(zones, zoneName)
+		// otherwise it is a zone name; make sure to strip ending dot
+		arg = strings.TrimSuffix(arg, endingDot)
+		zones = append(zones, arg)
 	}
 
 	// check if zones are empty

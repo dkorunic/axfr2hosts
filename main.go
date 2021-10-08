@@ -40,8 +40,8 @@ func main() {
 	hosts := make(map[string]map[string]int, defaultMapSize)
 	keys := make([]net.IP, 0, defaultMapSize)
 
-	for _, zoneName := range zones {
-		zoneRecords := zoneTransfer(zoneName, server)
+	for _, zone := range zones {
+		zoneRecords := zoneTransfer(zone, server)
 
 		// resolve and dump A and CNAME in hosts format
 		for _, rr := range zoneRecords {
@@ -58,7 +58,7 @@ func main() {
 					}
 				}
 
-				keys, hosts = updateHosts(t.Hdr.Name, t.A.String(), t.A, keys, hosts)
+				keys, hosts = updateHosts(t.Hdr.Name, t.A.String(), zone, t.A, keys, hosts)
 			case *dns.CNAME:
 				// ignore out-of-zone targets if not using greedyCNAME
 				if !*greedyCNAME {
@@ -67,7 +67,7 @@ func main() {
 						continue
 					}
 
-					if !strings.HasSuffix(cname, zoneName) {
+					if !strings.HasSuffix(cname, zone) {
 						continue
 					}
 				}
@@ -91,7 +91,7 @@ func main() {
 						}
 					}
 
-					keys, hosts = updateHosts(t.Hdr.Name, addr, ipAddr, keys, hosts)
+					keys, hosts = updateHosts(t.Hdr.Name, addr, zone, ipAddr, keys, hosts)
 				}
 			// every other RR type is skipped over
 			default:
@@ -103,10 +103,18 @@ func main() {
 }
 
 // updateHosts updates hosts map with a new label-IP pair, returning updated hosts map and updated keys slice.
-func updateHosts(label, addr string, ipAddr net.IP, keys []net.IP, results map[string]map[string]int) ([]net.IP,
-	map[string]map[string]int) {
-	label = strings.TrimSuffix(label, ".")
+func updateHosts(label, addr, zone string, ipAddr net.IP, keys []net.IP,
+	results map[string]map[string]int) ([]net.IP, map[string]map[string]int) {
+	label = strings.TrimSuffix(label, endingDot)
 	label = strings.ToLower(label)
+
+	// strip domain if needed
+	if *stripDomain {
+		label = strings.TrimSuffix(label, strings.Join([]string{endingDot, zone}, ""))
+		if label == "" {
+			return keys, results
+		}
+	}
 
 	if _, ok := results[addr]; ok {
 		results[addr][label] = 1

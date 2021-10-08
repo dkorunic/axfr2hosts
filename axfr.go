@@ -23,13 +23,18 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/miekg/dns"
+	"os"
+	"strings"
 )
 
 // zoneTransfer prepares and executes AXFR towards a specific DNS server, returning DNS RR slice.
 func zoneTransfer(zone string, server string) []dns.RR {
+	// make sure zone always ends with dot
+	if !strings.HasSuffix(zone, endingDot) {
+		zone = strings.Join([]string{zone, endingDot}, "")
+	}
+
 	// prepare AXFR
 	tr := new(dns.Transfer)
 	m := new(dns.Msg)

@@ -64,3 +64,21 @@ If there is a lot of zones that need to be fetched at once, tool works well with
 ```shell
 xargs axfr2hosts @nameserver < list
 ```
+
+### DNS error code responses
+
+In case you are wondering what `dns: bad xfr rcode: 9` means, here is a lost of DNS response codes:
+
+| Response Code | Return Message | Explanation          |
+| :------------ | :------------- | :------------------- |
+| 0             | NOERROR        | No error             |
+| 1             | FORMERR        | Format error         |
+| 2             | SERVFAIL       | Server failure       |
+| 3             | NXDOMAIN       | Name does not exist  |
+| 4             | NOTIMP         | Not implemented      |
+| 5             | REFUSED        | Refused              |
+| 6             | YXDOMAIN       | Name exists          |
+| 7             | YRRSET         | RRset exists         |
+| 8             | NXRRSET        | RRset does not exist |
+| 9             | NOTAUTH        | Not authoritative    |
+| 10            | NOTZONE        | Name not in zone     |
