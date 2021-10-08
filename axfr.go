@@ -35,20 +35,23 @@ func zoneTransfer(zone string, server string) []dns.RR {
 	m := new(dns.Msg)
 	m.SetAxfr(zone)
 
+	var records []dns.RR
+
 	// execute ingoing AXFR
 	c, err := tr.In(m, server)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: AXFR failure: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Error: AXFR failure for zone %q / server %q, will skip over: %v\n", zone, server, err)
+
+		return records
 	}
 
-	// fetch RRs
-	var records []dns.RR
-
+	// parse messages and fetch RRs if any
 	for msg := range c {
 		if msg.Error != nil {
-			fmt.Fprintf(os.Stderr, "Error: AXFR payload problem: %v\n", msg.Error)
-			os.Exit(1)
+			fmt.Fprintf(os.Stderr, "Error: AXFR payload problem for zone %q / server %q, but will try to continue: %v\n",
+				zone, server, msg.Error)
+
+			continue
 		}
 
 		records = append(records, msg.RR...)

@@ -28,71 +28,74 @@ import (
 	"github.com/miekg/dns"
 )
 
-const wildcard = "*"
+const (
+	wildcard       = "*"
+	defaultMapSize = 2048
+)
 
 func main() {
-	zoneName, server, cidrList := parseFlags()
-
-	zoneRecords := zoneTransfer(zoneName, server)
+	zones, server, cidrList := parseFlags()
 
 	ranger, doCIDR := rangerInit(cidrList)
+	hosts := make(map[string]map[string]int, defaultMapSize)
+	keys := make([]net.IP, 0, defaultMapSize)
 
-	hosts := make(map[string]map[string]int, len(zoneRecords))
+	for _, zoneName := range zones {
+		zoneRecords := zoneTransfer(zoneName, server)
 
-	keys := make([]net.IP, 0, len(zoneRecords))
-
-	// resolve and dump A and CNAME in hosts format
-	for _, rr := range zoneRecords {
-		switch t := rr.(type) {
-		case *dns.A:
-			// ignore wildcards if ignoreStar is used
-			if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
-				continue
-			}
-			// if CIDR matching is true, check if IP is whitelisted
-			if doCIDR && ranger != nil {
-				if c, _ := ranger.Contains(t.A); !c {
+		// resolve and dump A and CNAME in hosts format
+		for _, rr := range zoneRecords {
+			switch t := rr.(type) {
+			case *dns.A:
+				// ignore wildcards if ignoreStar is used
+				if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
 					continue
 				}
-			}
-
-			keys, hosts = updateHosts(t.Hdr.Name, t.A.String(), t.A, keys, hosts)
-		case *dns.CNAME:
-			// ignore out-of-zone targets if not using greedyCNAME
-			if !*greedyCNAME {
-				cname, err := net.LookupCNAME(t.Hdr.Name)
-				if err != nil {
-					continue
-				}
-
-				if !strings.HasSuffix(cname, zoneName) {
-					continue
-				}
-			}
-
-			addrs, err := net.LookupHost(t.Hdr.Name)
-			if err != nil {
-				continue
-			}
-
-			// loop through resolved array
-			for _, addr := range addrs {
-				ipAddr := net.ParseIP(addr)
-				if ipAddr == nil {
-					continue
-				}
-
 				// if CIDR matching is true, check if IP is whitelisted
 				if doCIDR && ranger != nil {
-					if c, _ := ranger.Contains(ipAddr); !c {
+					if c, _ := ranger.Contains(t.A); !c {
 						continue
 					}
 				}
 
-				keys, hosts = updateHosts(t.Hdr.Name, addr, ipAddr, keys, hosts)
+				keys, hosts = updateHosts(t.Hdr.Name, t.A.String(), t.A, keys, hosts)
+			case *dns.CNAME:
+				// ignore out-of-zone targets if not using greedyCNAME
+				if !*greedyCNAME {
+					cname, err := net.LookupCNAME(t.Hdr.Name)
+					if err != nil {
+						continue
+					}
+
+					if !strings.HasSuffix(cname, zoneName) {
+						continue
+					}
+				}
+
+				addrs, err := net.LookupHost(t.Hdr.Name)
+				if err != nil {
+					continue
+				}
+
+				// loop through resolved array
+				for _, addr := range addrs {
+					ipAddr := net.ParseIP(addr)
+					if ipAddr == nil {
+						continue
+					}
+
+					// if CIDR matching is true, check if IP is whitelisted
+					if doCIDR && ranger != nil {
+						if c, _ := ranger.Contains(ipAddr); !c {
+							continue
+						}
+					}
+
+					keys, hosts = updateHosts(t.Hdr.Name, addr, ipAddr, keys, hosts)
+				}
+			// every other RR type is skipped over
+			default:
 			}
-		// every other RR type is skipped over
-		default:
 		}
 	}
 

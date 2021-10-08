@@ -39,32 +39,61 @@ const (
 	endingDot     = "."
 	dnsPort       = "53"
 	cidrSeparator = ","
+	portSeparator = ":"
 )
 
-func parseFlags() (string, string, []string) {
+func parseFlags() ([]string, string, []string) {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %v [options] zone server[:port]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %v [options] zone [zone2 [zone3 ...]] @server[:port]\n", os.Args[0])
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
 
 	flag.Parse()
 
-	tail := flag.Args()
-	if len(tail) != 2 {
+	var server string
+
+	zones := make([]string, 0, len(flag.Args()))
+
+	if len(flag.Args()) == 0 {
+		fmt.Fprintf(os.Stderr, "Error: no arguments were given\n")
 		flag.Usage()
 	}
 
-	// make sure zone always ends with dot
-	zoneName := tail[0]
-	if !strings.HasSuffix(zoneName, endingDot) {
-		zoneName = strings.Join([]string{zoneName, endingDot}, "")
+	for _, arg := range flag.Args() {
+		// nameserver starts with '@'
+		if arg[0] == '@' {
+			server = arg[1:]
+
+			// make sure server is in server:port format
+			if !strings.Contains(server, portSeparator) {
+				server = net.JoinHostPort(server, dnsPort)
+			}
+
+			continue
+		}
+
+		// otherwise it is a zone name
+		zoneName := arg
+
+		// make sure zone always ends with dot
+		if !strings.HasSuffix(zoneName, endingDot) {
+			zoneName = strings.Join([]string{zoneName, endingDot}, "")
+		}
+
+		zones = append(zones, zoneName)
 	}
 
-	// make sure server is in server:port format
-	server := tail[1]
-	if !strings.HasSuffix(server, net.JoinHostPort("", dnsPort)) {
-		server = net.JoinHostPort(server, dnsPort)
+	// check if zones are empty
+	if len(zones) == 0 {
+		fmt.Fprintf(os.Stderr, "Error: no zones to transfer\n")
+		flag.Usage()
+	}
+
+	// check if server is empty
+	if server == "" {
+		fmt.Fprintf(os.Stderr, "Error: nameserver was not specified\n")
+		flag.Usage()
 	}
 
 	// split if non-empty
@@ -73,5 +102,5 @@ func parseFlags() (string, string, []string) {
 		cidrList = strings.Split(*cidrString, cidrSeparator)
 	}
 
-	return zoneName, server, cidrList
+	return zones, server, cidrList
 }

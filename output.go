@@ -60,6 +60,7 @@ func displayHosts(keysAddr []net.IP, results map[string]map[string]int) {
 		for k := range labelMap {
 			keysHost = append(keysHost, k)
 		}
+
 		sort.Strings(keysHost)
 
 		x = 0

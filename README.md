@@ -30,7 +30,7 @@ go get github.com/dkorunic/axfr2hosts
 ## Usage
 
 ```shell
-Usage: ./axfr2hosts [options] zone server[:port]
+Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] @server[:port]
   -cidr_list string
     	Use only targets from CIDR whitelist (comma separated list)
   -greedy_cname
@@ -42,11 +42,25 @@ Usage: ./axfr2hosts [options] zone server[:port]
 Typical use case would be:
 
 ```shell
-axfr2hosts dkorunic.net 172.64.33.146
+axfr2hosts dkorunic.net pkorunic.net @172.64.33.146
 ```
+
+### CNAME handling
 
 However the tool by default follows CNAMEs even if they are out-of-zone and resolves to one or more IP addresses if possible and lists all of them. That behaviour can be changed with `-greedy_cname=false` option.
 
+### Wildcard handling
+
 Also, by default tool lists wildcard (DNS labels containing `*`) like they are ordinary labels and that can be changed with `-ignore_star=true` option, which simply skips over those records.
 
+### Filter results by CIDR
+
 Finally if there is a need to list only a subset of records matching one or more CIDR ranges, option `-cidr_list` can be used.
+
+### Many zones transfer
+
+If there is a lot of zones that need to be fetched at once, tool works well with `xargs`. Individual zone errors will be displayed and such zones will be skipped over:
+
+```shell
+xargs axfr2hosts @nameserver < list
+```
