@@ -9,6 +9,8 @@
 
 axfr2hosts is a tool meant to do a [DNS zone transfer](https://en.wikipedia.org/wiki/DNS_zone_transfer) in a form of AXFR transaction of one or more zones towards a single DNS server and convert received A and CNAME records from a requested zones into a Unix [hosts file](<https://en.wikipedia.org/wiki/Hosts_(file)>) for a sysops use, for instance when DNS server is [otherwise unreachable](https://blog.cloudflare.com/october-2021-facebook-outage/) and/or down.
 
+By default hosts entries will be sorted its IP as a key and under each entry individual FQDNs will be sorted alphabetically.
+
 ## Requirements
 
 Ability to do AXFR, usually permitted with `allow-transfer` in Bind 9 or with `allow-axfr-ips` in PowerDNS.
