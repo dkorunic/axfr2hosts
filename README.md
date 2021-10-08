@@ -77,7 +77,7 @@ It is also possible to output hosts file with domain names stripped by using `-s
 
 ### DNS error code responses
 
-In case you are wondering what `dns: bad xfr rcode: 9` means, here is a lost of DNS response codes:
+In case you are wondering what `dns: bad xfr rcode: 9` means, here is a list of DNS response codes:
 
 | Response Code | Return Message | Explanation          |
 | :------------ | :------------- | :------------------- |
