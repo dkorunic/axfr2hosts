@@ -7,7 +7,7 @@
 
 ## About
 
-axfr2hosts is a tool meant to do a [DNS zone transfer](https://en.wikipedia.org/wiki/DNS_zone_transfer) in a form of AXFR transaction of a single zone towards a single DNS server and convert received A and CNAME records from a requested zone into a Unix [hosts file](<https://en.wikipedia.org/wiki/Hosts_(file)>) for a sysops use, for instance when DNS server is [otherwise unreachable](https://blog.cloudflare.com/october-2021-facebook-outage/) and/or down.
+axfr2hosts is a tool meant to do a [DNS zone transfer](https://en.wikipedia.org/wiki/DNS_zone_transfer) in a form of AXFR transaction of one or more zones towards a single DNS server and convert received A and CNAME records from a requested zones into a Unix [hosts file](<https://en.wikipedia.org/wiki/Hosts_(file)>) for a sysops use, for instance when DNS server is [otherwise unreachable](https://blog.cloudflare.com/october-2021-facebook-outage/) and/or down.
 
 ## Requirements
 
@@ -37,7 +37,11 @@ Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] @server[:port]
     	Resolve out-of-zone CNAME targets (default true)
   -ignore_star
     	Ignore wildcard records (default true)
+  -strip_domain
+    	Strip domain name from hosts entries
 ```
+
+At minimum, a single zone and a single server are needed for any meaningful action.
 
 Typical use case would be:
 
@@ -47,15 +51,15 @@ axfr2hosts dkorunic.net pkorunic.net @172.64.33.146
 
 ### CNAME handling
 
-However the tool by default follows CNAMEs even if they are out-of-zone and resolves to one or more IP addresses if possible and lists all of them. That behaviour can be changed with `-greedy_cname=false` option.
+However the tool by default follows CNAMEs even if they are out-of-zone and resolves to one or more IP addresses if possible and lists all of them. That behaviour can be changed with `-greedy_cname=false` flag.
 
 ### Wildcard handling
 
-Also, by default tool lists wildcard (DNS labels containing `*`) like they are ordinary labels and that can be changed with `-ignore_star=true` option, which simply skips over those records.
+Also, by default tool lists wildcard (DNS labels containing `*`) like they are ordinary labels and that can be changed with `-ignore_star=true` flag, which simply skips over those records.
 
 ### Filter results by CIDR
 
-Finally if there is a need to list only a subset of records matching one or more CIDR ranges, option `-cidr_list` can be used.
+Finally if there is a need to list only a subset of records matching one or more CIDR ranges, `-cidr_list` flag can be used.
 
 ### Many zones transfer
 
@@ -64,6 +68,10 @@ If there is a lot of zones that need to be fetched at once, tool works well with
 ```shell
 xargs axfr2hosts @nameserver < list
 ```
+
+### Strip domain name
+
+It is also possible to output hosts file with domain names stripped by using `-strip_domain` flag. When using many domains at once, this option does not make much sense.
 
 ### DNS error code responses
 
