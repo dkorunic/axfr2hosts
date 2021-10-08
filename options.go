@@ -30,10 +30,11 @@ import (
 )
 
 var (
-	greedyCNAME = flag.Bool("greedy_cname", true, "Resolve out-of-zone CNAME targets")
-	ignoreStar  = flag.Bool("ignore_star", true, "Ignore wildcard records")
-	cidrString  = flag.String("cidr_list", "", "Use only targets from CIDR whitelist (comma separated list)")
-	stripDomain = flag.Bool("strip_domain", false, "Strip domain name from hosts entries")
+	greedyCNAME  = flag.Bool("greedy_cname", true, "Resolve out-of-zone CNAME targets")
+	ignoreStar   = flag.Bool("ignore_star", true, "Ignore wildcard records")
+	cidrString   = flag.String("cidr_list", "", "Use only targets from CIDR whitelist (comma separated list)")
+	stripDomain  = flag.Bool("strip_domain", false, "Strip domain name from FQDN hosts entries")
+	stripUnstrip = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
 )
 
 const (

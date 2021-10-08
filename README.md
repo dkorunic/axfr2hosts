@@ -40,7 +40,9 @@ Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] @server[:port]
   -ignore_star
     	Ignore wildcard records (default true)
   -strip_domain
-    	Strip domain name from hosts entries
+    	Strip domain name from FQDN hosts entries
+  -strip_unstrip
+    	Keep both FQDN names and domain-stripped names
 ```
 
 At minimum, a single zone and a single server are needed for any meaningful action.
@@ -73,7 +75,7 @@ xargs axfr2hosts @nameserver < list
 
 ### Strip domain name
 
-It is also possible to output hosts file with domain names stripped by using `-strip_domain` flag. When using many domains at once, this option does not make much sense.
+It is also possible to output hosts file with domain names stripped by using `-strip_domain=true` flag. It is also possible to keep both domain-stripped labels and FQDNs at the same time by using `-strip_unstrip=true` flag. When using many domains at once, either of these options do not make much sense.
 
 ### DNS error code responses
 

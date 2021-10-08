@@ -102,27 +102,38 @@ func main() {
 	displayHosts(keys, hosts)
 }
 
-// updateHosts updates hosts map with a new label-IP pair, returning updated hosts map and updated keys slice.
+// updateHosts cleans FQDN and optionally shortens it, calling low-level writeMap and returning updated hosts map and
+// keys slice.
 func updateHosts(label, addr, zone string, ipAddr net.IP, keys []net.IP,
-	results map[string]map[string]int) ([]net.IP, map[string]map[string]int) {
+	hosts map[string]map[string]int) ([]net.IP, map[string]map[string]int) {
 	label = strings.TrimSuffix(label, endingDot)
 	label = strings.ToLower(label)
 
 	// strip domain if needed
-	if *stripDomain {
-		label = strings.TrimSuffix(label, strings.Join([]string{endingDot, zone}, ""))
-		if label == "" {
-			return keys, results
+	if *stripDomain || *stripUnstrip {
+		labelStripped := strings.TrimSuffix(label, strings.Join([]string{endingDot, zone}, ""))
+		if labelStripped != "" {
+			if *stripUnstrip {
+				keys, hosts = writeMap(labelStripped, addr, ipAddr, keys, hosts)
+			} else {
+				return writeMap(labelStripped, addr, ipAddr, keys, hosts)
+			}
 		}
 	}
 
-	if _, ok := results[addr]; ok {
-		results[addr][label] = 1
+	return writeMap(label, addr, ipAddr, keys, hosts)
+}
+
+// writeMap updates hosts map with a new label-IP pair, returning updated hosts map and keys slice.
+func writeMap(label, addr string, ipAddr net.IP, keys []net.IP, hosts map[string]map[string]int) ([]net.IP,
+	map[string]map[string]int) {
+	if _, ok := hosts[addr]; ok {
+		hosts[addr][label] = 1
 	} else {
 		keys = append(keys, ipAddr)
-		results[addr] = make(map[string]int)
-		results[addr][label] = 1
+		hosts[addr] = make(map[string]int)
+		hosts[addr][label] = 1
 	}
 
-	return keys, results
+	return keys, hosts
 }
