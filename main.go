@@ -33,11 +33,13 @@ const (
 	defaultMapSize = 2048
 )
 
+type HostMap map[string]map[string]int
+
 func main() {
 	zones, server, cidrList := parseFlags()
 
 	ranger, doCIDR := rangerInit(cidrList)
-	hosts := make(map[string]map[string]int, defaultMapSize)
+	hosts := make(HostMap, defaultMapSize)
 	keys := make([]net.IP, 0, defaultMapSize)
 
 	for _, zone := range zones {
@@ -105,7 +107,7 @@ func main() {
 // updateHosts cleans FQDN and optionally shortens it, calling low-level writeMap and returning updated hosts map and
 // keys slice.
 func updateHosts(label, addr, zone string, ipAddr net.IP, keys []net.IP,
-	hosts map[string]map[string]int) ([]net.IP, map[string]map[string]int) {
+	hosts HostMap) ([]net.IP, HostMap) {
 	label = strings.TrimSuffix(label, endingDot)
 	label = strings.ToLower(label)
 
@@ -125,8 +127,8 @@ func updateHosts(label, addr, zone string, ipAddr net.IP, keys []net.IP,
 }
 
 // writeMap updates hosts map with a new label-IP pair, returning updated hosts map and keys slice.
-func writeMap(label, addr string, ipAddr net.IP, keys []net.IP, hosts map[string]map[string]int) ([]net.IP,
-	map[string]map[string]int) {
+func writeMap(label, addr string, ipAddr net.IP, keys []net.IP, hosts HostMap) ([]net.IP,
+	HostMap) {
 	if _, ok := hosts[addr]; ok {
 		hosts[addr][label] = 1
 	} else {

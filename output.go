@@ -31,7 +31,7 @@ import (
 )
 
 // displayHosts does a final Unix hosts file output with a list of unique IPs and labels.
-func displayHosts(keysAddr []net.IP, results map[string]map[string]int) {
+func displayHosts(keysAddr []net.IP, results HostMap) {
 	var (
 		x, last int
 		sb      strings.Builder
