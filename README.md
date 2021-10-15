@@ -11,6 +11,8 @@ axfr2hosts is a tool meant to do a [DNS zone transfer](https://en.wikipedia.org/
 
 By default hosts entries will be sorted its IP as a key and under each entry individual FQDNs will be sorted alphabetically.
 
+If needed, axfr2hosts can also read and parse local RFC 1035 zones (for instance Bind9 zone files) and process A and CNAME records into a hosts file as described above.
+
 ## Requirements
 
 Ability to do AXFR, usually permitted with `allow-transfer` in Bind 9 or with `allow-axfr-ips` in PowerDNS.
@@ -32,7 +34,7 @@ go get github.com/dkorunic/axfr2hosts
 ## Usage
 
 ```shell
-Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] @server[:port]
+Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] [@server[:port]]
   -cidr_list string
     	Use only targets from CIDR whitelist (comma separated list)
   -greedy_cname
@@ -43,6 +45,10 @@ Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] @server[:port]
     	Strip domain name from FQDN hosts entries
   -strip_unstrip
     	Keep both FQDN names and domain-stripped names
+  -verbose
+    	Enable more verbosity
+1) If server was not specified, zones will be parsed as RFC 1035 zone files on a local filesystem,
+2) We also permit zone=domain argument format to infer a domain name for zone files.
 ```
 
 At minimum, a single zone and a single server are needed for any meaningful action.
@@ -76,6 +82,14 @@ xargs axfr2hosts @nameserver < list
 ### Strip domain name
 
 It is also possible to output hosts file with domain names stripped by using `-strip_domain=true` flag. It is also possible to keep both domain-stripped labels and FQDNs at the same time by using `-strip_unstrip=true` flag. When using many domains at once, either of these options do not make much sense.
+
+### Process local zone files
+
+It is also possible to directly process RFC 1035 zone files on a local filesystem when a nameserver is not been specified. We would typically recommend specifying a domain name manually by suffixing the zone file with `=` and domain name as shown below, as one inferred from a zone can possibly be invalid (due to lack of top-level `$ORIGIN` and/or all records being non-FQDN and/or being suffixed with `@` macro):
+
+```shell
+axfr2hosts dkorunic.net.zone=dkorunic.net
+```
 
 ### DNS error code responses
 

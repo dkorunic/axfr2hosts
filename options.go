@@ -35,6 +35,7 @@ var (
 	cidrString   = flag.String("cidr_list", "", "Use only targets from CIDR whitelist (comma separated list)")
 	stripDomain  = flag.Bool("strip_domain", false, "Strip domain name from FQDN hosts entries")
 	stripUnstrip = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
+	verbose      = flag.Bool("verbose", false, "Enable more verbosity")
 )
 
 const (
@@ -48,8 +49,10 @@ const (
 
 func parseFlags() ([]string, string, []string) {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %v [options] zone [zone2 [zone3 ...]] @server[:port]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %v [options] zone [zone2 [zone3 ...]] [@server[:port]]\n", os.Args[0])
 		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "1) If server was not specified, zones will be parsed as RFC 1035 zone files on a local filesystem,\n")
+		fmt.Fprintf(os.Stderr, "2) We also permit zone=domain argument format to infer a domain name for zone files.\n")
 		fmt.Fprintf(os.Stderr, "\nFor more information visit project home: %v\n", projectHome)
 		os.Exit(0)
 	}
@@ -85,13 +88,7 @@ func parseFlags() ([]string, string, []string) {
 
 	// check if zones are empty
 	if len(zones) == 0 {
-		fmt.Fprintf(os.Stderr, "Error: no zones to transfer\n")
-		flag.Usage()
-	}
-
-	// check if server is empty
-	if server == "" {
-		fmt.Fprintf(os.Stderr, "Error: nameserver was not specified\n")
+		fmt.Fprintf(os.Stderr, "Error: no zones to transfer or parse\n")
 		flag.Usage()
 	}
 

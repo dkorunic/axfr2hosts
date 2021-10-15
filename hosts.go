@@ -23,28 +23,41 @@ package main
 
 import (
 	"net"
+	"strings"
 )
 
-const (
-	defaultMapSize = 2048
-)
+type HostMap map[string]map[string]int
 
-func main() {
-	zones, server, cidrList := parseFlags()
+// updateHosts cleans FQDN and optionally shortens it, calling low-level writeMap and returning updated hosts map and
+// keys slice.
+func updateHosts(label, addr, zone string, ipAddr net.IP, keys []net.IP, hosts HostMap) ([]net.IP, HostMap) {
+	label = strings.TrimSuffix(label, endingDot)
+	label = strings.ToLower(label)
 
-	ranger, doCIDR := rangerInit(cidrList)
-	hosts := make(HostMap, defaultMapSize)
-	keys := make([]net.IP, 0, defaultMapSize)
-
-	for _, zone := range zones {
-		if server == "" {
-			// there is no remote server, so assume zones are local Bind9 files
-			keys, hosts = processLocalZone(zone, doCIDR, ranger, keys, hosts)
-		} else {
-			// otherwise assume remote AXFR-able zones
-			keys, hosts = processRemoteZone(zone, server, doCIDR, ranger, keys, hosts)
+	// strip domain if needed
+	if *stripDomain || *stripUnstrip {
+		labelStripped := strings.TrimSuffix(label, strings.Join([]string{endingDot, zone}, ""))
+		if labelStripped != "" {
+			if *stripUnstrip {
+				keys, hosts = writeMap(labelStripped, addr, ipAddr, keys, hosts)
+			} else {
+				return writeMap(labelStripped, addr, ipAddr, keys, hosts)
+			}
 		}
 	}
 
-	displayHosts(keys, hosts)
+	return writeMap(label, addr, ipAddr, keys, hosts)
+}
+
+// writeMap updates hosts map with a new label-IP pair, returning updated hosts map and keys slice.
+func writeMap(label, addr string, ipAddr net.IP, keys []net.IP, hosts HostMap) ([]net.IP, HostMap) {
+	if _, ok := hosts[addr]; ok {
+		hosts[addr][label] = 1
+	} else {
+		keys = append(keys, ipAddr)
+		hosts[addr] = make(map[string]int)
+		hosts[addr][label] = 1
+	}
+
+	return keys, hosts
 }
