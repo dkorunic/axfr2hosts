@@ -54,7 +54,7 @@ func writeMap(label, addr string, ipAddr net.IP, keys []net.IP, hosts HostMap) (
 	if _, ok := hosts[addr]; ok {
 		hosts[addr][label] = 1
 	} else {
-		keys = append(keys, ipAddr)
+		keys = append(keys, ipAddr.To16())
 		hosts[addr] = make(map[string]int)
 		hosts[addr][label] = 1
 	}

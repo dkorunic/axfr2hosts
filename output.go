@@ -42,7 +42,7 @@ func displayHosts(keysAddr []net.IP, results HostMap) {
 
 	// sorting by IP
 	sort.Slice(keysAddr, func(i, j int) bool {
-		return bytes.Compare(keysAddr[i].To16(), keysAddr[j].To16()) < 0
+		return bytes.Compare(keysAddr[i], keysAddr[j]) < 0
 	})
 
 	for i := range keysAddr {
