@@ -23,9 +23,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/miekg/dns"
 	"os"
 	"strings"
+
+	"github.com/miekg/dns"
 )
 
 // zoneTransfer prepares and executes AXFR towards a specific DNS server, returning DNS RR slice.

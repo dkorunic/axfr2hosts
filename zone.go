@@ -18,12 +18,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/miekg/dns"
-	"github.com/yl2chen/cidranger"
 	"io/ioutil"
 	"net"
 	"os"
 	"strings"
+
+	"github.com/miekg/dns"
+	"github.com/yl2chen/cidranger"
 )
 
 const (
@@ -44,7 +45,8 @@ func processRemoteZone(zone string, server string, doCIDR bool, ranger cidranger
 
 // processLocalZone is calling zoneParser() for local zone parse and processRecords() for handling valid RR.
 func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger, keys []net.IP, hosts HostMap) ([]net.IP,
-	HostMap) {
+	HostMap,
+) {
 	var domain string
 
 	if strings.Contains(zone, fileZoneSeparator) {
@@ -79,7 +81,8 @@ func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger, keys []
 
 // processRecords is processing each RR and calling updateHosts() for each valid RR.
 func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, keys []net.IP, hosts HostMap,
-	zoneRecords []dns.RR) ([]net.IP, HostMap) {
+	zoneRecords []dns.RR,
+) ([]net.IP, HostMap) {
 	for _, rr := range zoneRecords {
 		switch t := rr.(type) {
 		case *dns.A:
