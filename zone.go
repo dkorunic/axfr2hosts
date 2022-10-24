@@ -18,7 +18,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -145,7 +144,7 @@ func zoneParser(zone, domain string) []dns.RR {
 	var records []dns.RR
 
 	// read a whole zone into memory
-	z, err := ioutil.ReadFile(zone)
+	z, err := os.ReadFile(zone)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: problem reading zone file: %q: %v\n", zone, err)
 
