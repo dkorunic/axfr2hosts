@@ -62,6 +62,7 @@ func parseFlags() ([]string, string, []string) {
 	var server string
 
 	zones := make([]string, 0, len(flag.Args()))
+	zoneMap := make(map[string]struct{}, len(flag.Args()))
 
 	if len(flag.Args()) == 0 {
 		fmt.Fprintf(os.Stderr, "Error: no arguments were given\n")
@@ -83,7 +84,12 @@ func parseFlags() ([]string, string, []string) {
 
 		// otherwise it is a zone name; make sure to strip ending dot
 		arg = strings.TrimSuffix(arg, endingDot)
-		zones = append(zones, arg)
+
+		// add only if unique
+		if _, ok := zoneMap[arg]; !ok {
+			zones = append(zones, arg)
+			zoneMap[arg] = struct{}{}
+		}
 	}
 
 	// check if zones are empty
