@@ -41,6 +41,8 @@ Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] [@server[:port]]
     	Resolve out-of-zone CNAME targets (default true)
   -ignore_star
     	Ignore wildcard records (default true)
+  -max_transfers int
+    	Maximum parallel zone transfers (default 10)
   -strip_domain
     	Strip domain name from FQDN hosts entries
   -strip_unstrip
@@ -78,6 +80,8 @@ If there is a lot of zones that need to be fetched at once, tool works well with
 ```shell
 xargs axfr2hosts @nameserver < list
 ```
+
+Maximum of concurrent zone transfers is limited by `-max_transfers` flag and defaults to `10`, aligned with Bind 9 default (`transfers-out` in Bind 9 `named.conf`).
 
 ### Strip domain name
 
