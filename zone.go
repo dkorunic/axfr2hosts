@@ -38,20 +38,17 @@ const (
 )
 
 // processRemoteZone is calling zoneTransfer() for AXFR and processRecords() for handling each valid RR.
-func processRemoteZone(zone string, server string, doCIDR bool, ranger cidranger.Ranger, keys []net.IP, hosts HostMap) ([]net.IP, HostMap) {
+func processRemoteZone(zone string, server string, doCIDR bool, ranger cidranger.Ranger, hosts chan<- HostEntry) {
 	if *verbose {
 		fmt.Fprintf(os.Stderr, "Info: doing AXFR for zone %q / server %q\n", zone, server)
 	}
 
 	zoneRecords := zoneTransfer(zone, server)
-
-	return processRecords(zone, doCIDR, ranger, keys, hosts, zoneRecords)
+	processRecords(zone, doCIDR, ranger, hosts, zoneRecords)
 }
 
 // processLocalZone is calling zoneParser() for local zone parse and processRecords() for handling valid RR.
-func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger, keys []net.IP, hosts HostMap) ([]net.IP,
-	HostMap,
-) {
+func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger, hosts chan<- HostEntry) {
 	var domain string
 
 	if strings.Contains(zone, fileZoneSeparator) {
@@ -81,13 +78,13 @@ func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger, keys []
 			zone, zone)
 	}
 
-	return processRecords(zone, doCIDR, ranger, keys, hosts, zoneRecords)
+	processRecords(zone, doCIDR, ranger, hosts, zoneRecords)
 }
 
-// processRecords is processing each RR and calling updateHosts() for each valid RR.
-func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, keys []net.IP, hosts HostMap,
+// processRecords is processing each RR and calling processHost() for each valid RR.
+func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts chan<- HostEntry,
 	zoneRecords []dns.RR,
-) ([]net.IP, HostMap) {
+) {
 	for _, rr := range zoneRecords {
 		switch t := rr.(type) {
 		case *dns.A:
@@ -102,7 +99,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, keys []ne
 				}
 			}
 
-			keys, hosts = updateHosts(t.Hdr.Name, t.A.String(), zone, t.A, keys, hosts)
+			processHost(t.Hdr.Name, t.A.String(), zone, t.A, hosts)
 		case *dns.CNAME:
 			// ignore out-of-zone targets if not using greedyCNAME
 			if !*greedyCNAME {
@@ -135,14 +132,12 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, keys []ne
 					}
 				}
 
-				keys, hosts = updateHosts(t.Hdr.Name, addr, zone, ipAddr, keys, hosts)
+				processHost(t.Hdr.Name, addr, zone, ipAddr, hosts)
 			}
 		// every other RR type is skipped over
 		default:
 		}
 	}
-
-	return keys, hosts
 }
 
 // zoneParser is parsing loading zones into memory and parsing them, returning slice of RRs.

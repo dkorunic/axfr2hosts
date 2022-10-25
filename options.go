@@ -36,6 +36,7 @@ var (
 	stripDomain  = flag.Bool("strip_domain", false, "Strip domain name from FQDN hosts entries")
 	stripUnstrip = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
 	verbose      = flag.Bool("verbose", false, "Enable more verbosity")
+	maxTransfers = flag.Int("max_transfers", 10, "Maximum parallel zone transfers")
 )
 
 const (
@@ -85,7 +86,7 @@ func parseFlags() ([]string, string, []string) {
 		// otherwise it is a zone name; make sure to strip ending dot
 		arg = strings.TrimSuffix(arg, endingDot)
 
-		// add only if unique
+		// add zone only if unique
 		if _, ok := zoneMap[arg]; !ok {
 			zones = append(zones, arg)
 			zoneMap[arg] = struct{}{}

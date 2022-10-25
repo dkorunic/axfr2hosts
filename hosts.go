@@ -26,11 +26,19 @@ import (
 	"strings"
 )
 
+// HostEntry contains label, addr and ipAddr for sending through a channel.
+type HostEntry struct {
+	label  string
+	addr   string
+	ipAddr net.IP
+}
+
+// HostMap contains map of addresses and labels.
 type HostMap map[string]map[string]int
 
-// updateHosts cleans FQDN and optionally shortens it, calling low-level writeMap and returning updated hosts map and
+// processHost cleans FQDN and optionally shortens it, calling low-level writeHostEntries and returning updated hosts map and
 // keys slice.
-func updateHosts(label, addr, zone string, ipAddr net.IP, keys []net.IP, hosts HostMap) ([]net.IP, HostMap) {
+func processHost(label, addr, zone string, ipAddr net.IP, hosts chan<- HostEntry) {
 	label = strings.TrimSuffix(label, endingDot)
 	label = strings.ToLower(label)
 
@@ -38,26 +46,27 @@ func updateHosts(label, addr, zone string, ipAddr net.IP, keys []net.IP, hosts H
 	if *stripDomain || *stripUnstrip {
 		labelStripped := strings.TrimSuffix(label, strings.Join([]string{endingDot, zone}, ""))
 		if labelStripped != "" {
-			if *stripUnstrip {
-				keys, hosts = writeMap(labelStripped, addr, ipAddr, keys, hosts)
-			} else {
-				return writeMap(labelStripped, addr, ipAddr, keys, hosts)
+			hosts <- HostEntry{label: labelStripped, addr: addr, ipAddr: ipAddr}
+
+			if !*stripUnstrip {
+				return
 			}
 		}
 	}
 
-	return writeMap(label, addr, ipAddr, keys, hosts)
+	hosts <- HostEntry{label: label, addr: addr, ipAddr: ipAddr}
 }
 
-// writeMap updates hosts map with a new label-IP pair, returning updated hosts map and keys slice.
-func writeMap(label, addr string, ipAddr net.IP, keys []net.IP, hosts HostMap) ([]net.IP, HostMap) {
-	if _, ok := hosts[addr]; ok {
-		hosts[addr][label] = 1
-	} else {
-		keys = append(keys, ipAddr.To16())
-		hosts[addr] = make(map[string]int)
-		hosts[addr][label] = 1
+// writeHostEntries updates hosts map with a new label-IP pair, returning updated hosts map and keys slice.
+func writeHostEntries(hosts <-chan HostEntry, keys *[]net.IP, entries HostMap) {
+	for x := range hosts {
+		label, addr, ipAddr := x.label, x.addr, x.ipAddr
+		if _, ok := entries[addr]; ok {
+			entries[addr][label] = 1
+		} else {
+			*keys = append(*keys, ipAddr.To16())
+			entries[addr] = make(map[string]int)
+			entries[addr][label] = 1
+		}
 	}
-
-	return keys, hosts
 }

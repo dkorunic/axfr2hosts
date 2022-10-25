@@ -25,8 +25,15 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/miekg/dns"
+)
+
+const (
+	dialTimeout  = 15 * time.Second
+	readTimeout  = 15 * time.Second
+	writeTimeout = 15 * time.Second
 )
 
 // zoneTransfer prepares and executes AXFR towards a specific DNS server, returning DNS RR slice.
@@ -41,9 +48,14 @@ func zoneTransfer(zone string, server string) []dns.RR {
 	m := new(dns.Msg)
 	m.SetAxfr(zone)
 
+	// set timeouts
+	tr.DialTimeout = dialTimeout
+	tr.ReadTimeout = readTimeout
+	tr.WriteTimeout = writeTimeout
+
 	var records []dns.RR
 
-	// execute ingoing AXFR
+	// execute AXFR
 	c, err := tr.In(m, server)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: AXFR failure for zone %q / server %q, will skip over: %v\n", zone, server, err)

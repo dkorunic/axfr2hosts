@@ -23,28 +23,63 @@ package main
 
 import (
 	"net"
+	"sync"
 )
 
 const (
-	defaultMapSize = 2048
+	mapSize      = 2048
+	hostChanSize = 64
 )
 
 func main() {
 	zones, server, cidrList := parseFlags()
 
 	ranger, doCIDR := rangerInit(cidrList)
-	hosts := make(HostMap, defaultMapSize)
-	keys := make([]net.IP, 0, defaultMapSize)
+	hostChan := make(chan HostEntry, hostChanSize)
 
+	entries := make(HostMap, mapSize)
+	keys := make([]net.IP, 0, mapSize)
+
+	// host map/key slice managing monitor routine
+	var wgMon sync.WaitGroup
+	wgMon.Add(1)
+	go func() {
+		defer wgMon.Done()
+
+		writeHostEntries(hostChan, &keys, entries)
+	}()
+
+	// limit total AXFRs in progress
+	semAXFR := make(chan struct{}, *maxTransfers)
+
+	// routines for processing local and remote zones
+	var wgWrk sync.WaitGroup
 	for _, zone := range zones {
+		zone := zone
 		if server == "" {
 			// there is no remote server, so assume zones are local Bind9 files
-			keys, hosts = processLocalZone(zone, doCIDR, ranger, keys, hosts)
+			wgWrk.Add(1)
+			go func() {
+				defer wgWrk.Done()
+
+				processLocalZone(zone, doCIDR, ranger, hostChan)
+			}()
 		} else {
 			// otherwise assume remote AXFR-able zones
-			keys, hosts = processRemoteZone(zone, server, doCIDR, ranger, keys, hosts)
+			wgWrk.Add(1)
+			semAXFR <- struct{}{}
+			go func() {
+				defer wgWrk.Done()
+
+				processRemoteZone(zone, server, doCIDR, ranger, hostChan)
+				<-semAXFR
+			}()
 		}
 	}
 
-	displayHosts(keys, hosts)
+	wgWrk.Wait()
+	close(hostChan)
+	wgMon.Wait()
+
+	displayHostEntries(keys, entries)
 }

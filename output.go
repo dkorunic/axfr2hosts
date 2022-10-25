@@ -30,8 +30,8 @@ import (
 	"time"
 )
 
-// displayHosts does a final Unix hosts file output with a list of unique IPs and labels.
-func displayHosts(keysAddr []net.IP, results HostMap) {
+// displayHostEntries does a final Unix hosts file output with a list of unique IPs and labels.
+func displayHostEntries(keysAddr []net.IP, results HostMap) {
 	var (
 		x, last int
 		sb      strings.Builder
