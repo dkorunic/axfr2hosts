@@ -23,6 +23,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/avast/retry-go"
 	"os"
 	"strings"
 	"time"
@@ -31,9 +32,9 @@ import (
 )
 
 const (
-	dialTimeout  = 15 * time.Second
-	readTimeout  = 15 * time.Second
-	writeTimeout = 15 * time.Second
+	dialTimeout  = 30 * time.Second
+	readTimeout  = 30 * time.Second
+	writeTimeout = 30 * time.Second
 )
 
 // zoneTransfer prepares and executes AXFR towards a specific DNS server, returning DNS RR slice.
@@ -54,9 +55,19 @@ func zoneTransfer(zone string, server string) []dns.RR {
 	tr.WriteTimeout = writeTimeout
 
 	var records []dns.RR
+	var c chan *dns.Envelope
 
-	// execute AXFR
-	c, err := tr.In(m, server)
+	// execute AXFR with automatic retrying
+	err := retry.Do(
+		func() error {
+			var err error
+			c, err = tr.In(m, server)
+
+			return err
+		},
+		retry.Attempts(*maxRetries),
+	)
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: AXFR failure for zone %q / server %q, will skip over: %v\n", zone, server, err)
 

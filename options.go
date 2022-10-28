@@ -37,6 +37,7 @@ var (
 	stripUnstrip = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
 	verbose      = flag.Bool("verbose", false, "Enable more verbosity")
 	maxTransfers = flag.Int("max_transfers", 10, "Maximum parallel zone transfers")
+	maxRetries   = flag.Uint("max_retries", 3, "Maximum zone transfer attempts")
 )
 
 const (

@@ -3,6 +3,7 @@ module github.com/dkorunic/axfr2hosts
 go 1.19
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/miekg/dns v1.1.50
 	github.com/yl2chen/cidranger v1.0.2
 )
