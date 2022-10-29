@@ -64,7 +64,7 @@ func zoneTransfer(zone string, server string) []dns.RR {
 			var err error
 			c, err = tr.In(m, server)
 
-			return err
+			return fmt.Errorf("error performing zone transfer: %w", err)
 		},
 		retry.Attempts(*maxRetries),
 	)
