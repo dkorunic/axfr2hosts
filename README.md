@@ -31,7 +31,7 @@ Download your preferred flavor from [the releases](https://github.com/dkorunic/a
 ### Using go get
 
 ```shell
-go get github.com/dkorunic/axfr2hosts
+go install github.com/dkorunic/axfr2hosts@latest
 ```
 
 ## Usage
