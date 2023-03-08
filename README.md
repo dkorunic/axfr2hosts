@@ -5,6 +5,8 @@
 [![codebeat badge](https://codebeat.co/badges/b535ef48-ba10-413e-81f0-dcb5a17e01c4)](https://codebeat.co/projects/github-com-dkorunic-axfr2hosts-main)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dkorunic/axfr2hosts)](https://goreportcard.com/report/github.com/dkorunic/axfr2hosts)
 
+![](gopher.png)
+
 ## About
 
 axfr2hosts is a tool meant to do a [DNS zone transfer](https://en.wikipedia.org/wiki/DNS_zone_transfer) in a form of AXFR transaction of one or more zones towards a single DNS server and convert received A and CNAME records from a requested zones into a Un\*x [hosts file](<https://en.wikipedia.org/wiki/Hosts_(file)>) for a sysops use, for instance when DNS server is [otherwise unreachable](https://blog.cloudflare.com/october-2021-facebook-outage/) and/or down.
