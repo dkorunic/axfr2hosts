@@ -40,9 +40,11 @@ func main() {
 	entries := make(HostMap, mapSize)
 	keys := make([]net.IP, 0, mapSize)
 
-	// host map/key slice managing monitor routine
-	var wgMon sync.WaitGroup
+	var wgMon, wgWrk sync.WaitGroup
+
 	wgMon.Add(1)
+
+	// host map/key slice managing monitor routine
 	go func() {
 		defer wgMon.Done()
 
@@ -53,12 +55,13 @@ func main() {
 	semAXFR := make(chan struct{}, *maxTransfers)
 
 	// routines for processing local and remote zones
-	var wgWrk sync.WaitGroup
 	for _, zone := range zones {
 		zone := zone
+
 		if server == "" {
 			// there is no remote server, so assume zones are local Bind9 files
 			wgWrk.Add(1)
+
 			go func() {
 				defer wgWrk.Done()
 

@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v4"
-
 	"github.com/miekg/dns"
 )
 
@@ -56,6 +55,7 @@ func zoneTransfer(zone string, server string) []dns.RR {
 	tr.WriteTimeout = writeTimeout
 
 	var records []dns.RR
+
 	var c chan *dns.Envelope
 
 	// execute AXFR with automatic retrying
