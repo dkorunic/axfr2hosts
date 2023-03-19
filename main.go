@@ -24,6 +24,9 @@ package main
 import (
 	"net"
 	"sync"
+
+	_ "github.com/KimMachineGun/automemlimit"
+	"go.uber.org/automaxprocs/maxprocs"
 )
 
 const (
@@ -32,6 +35,9 @@ const (
 )
 
 func main() {
+	undo, _ := maxprocs.Set()
+	defer undo()
+
 	zones, server, cidrList := parseFlags()
 
 	ranger, doCIDR := rangerInit(cidrList)
