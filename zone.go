@@ -94,7 +94,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 				continue
 			}
 
-			ipAddr, ok := netip.AddrFromSlice(t.A)
+			ipAddr, ok := unmapAddrFromSlice(t.A)
 			if !ok {
 				continue
 			}
@@ -113,7 +113,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 				continue
 			}
 
-			ipAddr6, ok := netip.AddrFromSlice(t.AAAA)
+			ipAddr6, ok := unmapAddrFromSlice(t.AAAA)
 			if !ok {
 				continue
 			}
@@ -146,7 +146,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 
 			// loop through resolved array
 			for _, a := range addrs {
-				ipAddr, err := netip.ParseAddr(a)
+				ipAddr, err := unmapParseAddr(a)
 				if err != nil {
 					continue
 				}
@@ -193,4 +193,24 @@ func zoneParser(zone, domain string) []dns.RR {
 	}
 
 	return records
+}
+
+// unmapAddrFromSlice parses 4 or 16-byte slice as IPv4 or IPv6 address and removes any IPv4-mapped IPv6 prefix.
+func unmapAddrFromSlice(slice []byte) (netip.Addr, bool) {
+	ipAddr, ok := netip.AddrFromSlice(slice)
+	if !ok {
+		return ipAddr, false
+	}
+
+	return ipAddr.Unmap(), true
+}
+
+// unmapParseAddr parses string as an IP address, returning result and removes any IPv4-mapped IPv6 prefix.
+func unmapParseAddr(s string) (netip.Addr, error) {
+	ipAddr, err := netip.ParseAddr(s)
+	if err != nil {
+		return ipAddr, err
+	}
+
+	return ipAddr.Unmap(), nil
 }

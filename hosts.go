@@ -59,7 +59,7 @@ func processHost(label, zone string, ipAddr netip.Addr, hosts chan<- HostEntry) 
 // writeHostEntries updates hosts map with a new label-IP pair, returning updated hosts map and keys slice.
 func writeHostEntries(hosts <-chan HostEntry, keys *[]netip.Addr, entries HostMap) {
 	for x := range hosts {
-		label, ipAddr := x.label, x.ipAddr.Unmap()
+		label, ipAddr := x.label, x.ipAddr
 		if _, ok := entries[ipAddr]; ok {
 			entries[ipAddr][label] = struct{}{}
 		} else {

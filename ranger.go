@@ -46,6 +46,8 @@ func rangerInit(cidrList []string) (cidranger.Ranger, bool) {
 			n, err := netip.ParsePrefix(s)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: problem parsing CIDR: %v\n", err)
+
+				continue
 			}
 
 			_ = ranger.Insert(cidranger.NewBasicRangerEntry(n))
