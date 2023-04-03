@@ -23,10 +23,10 @@ package main
 
 import (
 	"fmt"
-	"net"
+	"net/netip"
 	"os"
 
-	"github.com/yl2chen/cidranger"
+	"github.com/monoidic/cidranger"
 )
 
 // rangerInit initializes and loads CIDR Ranger and sets doCIDR flag to true if list of networks is non-empty.
@@ -43,12 +43,12 @@ func rangerInit(cidrList []string) (cidranger.Ranger, bool) {
 
 		// parse and insert individual networks
 		for _, s := range cidrList {
-			_, n, err := net.ParseCIDR(s)
+			n, err := netip.ParsePrefix(s)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: problem parsing CIDR: %v\n", err)
 			}
 
-			_ = ranger.Insert(cidranger.NewBasicRangerEntry(*n))
+			_ = ranger.Insert(cidranger.NewBasicRangerEntry(n))
 		}
 	}
 

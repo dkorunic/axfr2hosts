@@ -29,6 +29,17 @@ import (
 	"strings"
 )
 
+const (
+	endingDot           = "."
+	dnsPort             = "53"
+	dnsPrefix           = "@"
+	cidrSeparator       = ","
+	portSeparator       = ":"
+	projectHome         = "https://github.com/dkorunic/axfr2hosts"
+	maxTransfersDefault = 10
+	maxRetriesDefault   = 3
+)
+
 var (
 	greedyCNAME  = flag.Bool("greedy_cname", true, "Resolve out-of-zone CNAME targets")
 	ignoreStar   = flag.Bool("ignore_star", true, "Ignore wildcard records")
@@ -36,17 +47,8 @@ var (
 	stripDomain  = flag.Bool("strip_domain", false, "Strip domain name from FQDN hosts entries")
 	stripUnstrip = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
 	verbose      = flag.Bool("verbose", false, "Enable more verbosity")
-	maxTransfers = flag.Uint("max_transfers", 10, "Maximum parallel zone transfers")
-	maxRetries   = flag.Uint("max_retries", 3, "Maximum zone transfer attempts")
-)
-
-const (
-	endingDot     = "."
-	dnsPort       = "53"
-	dnsPrefix     = "@"
-	cidrSeparator = ","
-	portSeparator = ":"
-	projectHome   = "https://github.com/dkorunic/axfr2hosts"
+	maxTransfers = flag.Uint("max_transfers", maxTransfersDefault, "Maximum parallel zone transfers")
+	maxRetries   = flag.Uint("max_retries", maxRetriesDefault, "Maximum zone transfer attempts")
 )
 
 func parseFlags() ([]string, string, []string) {

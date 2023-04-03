@@ -22,16 +22,15 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"net"
+	"net/netip"
 	"sort"
 	"strings"
 	"time"
 )
 
 // displayHostEntries does a final Unix hosts file output with a list of unique IPs and labels.
-func displayHostEntries(keysAddr []net.IP, results HostMap) {
+func displayHostEntries(keysAddr []netip.Addr, results HostMap) {
 	var (
 		x, last int
 		sb      strings.Builder
@@ -42,15 +41,15 @@ func displayHostEntries(keysAddr []net.IP, results HostMap) {
 
 	// sorting by IP
 	sort.Slice(keysAddr, func(i, j int) bool {
-		return bytes.Compare(keysAddr[i], keysAddr[j]) < 0
+		return keysAddr[i].Compare(keysAddr[j]) < 0
 	})
 
 	for i := range keysAddr {
-		ipAddr := keysAddr[i].String()
+		ipAddr := keysAddr[i]
 		labelMap := results[ipAddr]
 
 		sb.Reset()
-		sb.WriteString(ipAddr)
+		sb.WriteString(ipAddr.String())
 		sb.WriteString("\t")
 
 		last = len(labelMap)

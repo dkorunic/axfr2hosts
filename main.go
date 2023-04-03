@@ -22,7 +22,7 @@
 package main
 
 import (
-	"net"
+	"net/netip"
 	"sync"
 
 	_ "github.com/KimMachineGun/automemlimit"
@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	mapSize      = 2048
+	mapSize      = 4096
 	hostChanSize = 64
 )
 
@@ -44,7 +44,7 @@ func main() {
 	hostChan := make(chan HostEntry, hostChanSize)
 
 	entries := make(HostMap, mapSize)
-	keys := make([]net.IP, 0, mapSize)
+	keys := make([]netip.Addr, 0, mapSize)
 
 	var wgMon, wgWrk sync.WaitGroup
 

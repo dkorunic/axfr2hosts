@@ -22,23 +22,22 @@
 package main
 
 import (
-	"net"
+	"net/netip"
 	"strings"
 )
 
 // HostEntry contains label, addr and ipAddr for sending through a channel.
 type HostEntry struct {
+	ipAddr netip.Addr
 	label  string
-	addr   string
-	ipAddr net.IP
 }
 
 // HostMap contains map of addresses and labels.
-type HostMap map[string]map[string]int
+type HostMap map[netip.Addr]map[string]struct{}
 
-// processHost cleans FQDN and optionally shortens it, calling low-level writeHostEntries and returning updated hosts map and
-// keys slice.
-func processHost(label, addr, zone string, ipAddr net.IP, hosts chan<- HostEntry) {
+// processHost cleans FQDN and optionally shortens it, calling low-level writeHostEntries and returning updated hosts
+// map and keys slice.
+func processHost(label, zone string, ipAddr netip.Addr, hosts chan<- HostEntry) {
 	label = strings.TrimSuffix(label, endingDot)
 	label = strings.ToLower(label)
 
@@ -46,7 +45,7 @@ func processHost(label, addr, zone string, ipAddr net.IP, hosts chan<- HostEntry
 	if *stripDomain || *stripUnstrip {
 		labelStripped := strings.TrimSuffix(label, strings.Join([]string{endingDot, zone}, ""))
 		if labelStripped != "" {
-			hosts <- HostEntry{label: labelStripped, addr: addr, ipAddr: ipAddr}
+			hosts <- HostEntry{label: labelStripped, ipAddr: ipAddr}
 
 			if !*stripUnstrip {
 				return
@@ -54,19 +53,19 @@ func processHost(label, addr, zone string, ipAddr net.IP, hosts chan<- HostEntry
 		}
 	}
 
-	hosts <- HostEntry{label: label, addr: addr, ipAddr: ipAddr}
+	hosts <- HostEntry{label: label, ipAddr: ipAddr}
 }
 
 // writeHostEntries updates hosts map with a new label-IP pair, returning updated hosts map and keys slice.
-func writeHostEntries(hosts <-chan HostEntry, keys *[]net.IP, entries HostMap) {
+func writeHostEntries(hosts <-chan HostEntry, keys *[]netip.Addr, entries HostMap) {
 	for x := range hosts {
-		label, addr, ipAddr := x.label, x.addr, x.ipAddr
-		if _, ok := entries[addr]; ok {
-			entries[addr][label] = 1
+		label, ipAddr := x.label, x.ipAddr.Unmap()
+		if _, ok := entries[ipAddr]; ok {
+			entries[ipAddr][label] = struct{}{}
 		} else {
-			*keys = append(*keys, ipAddr.To16())
-			entries[addr] = make(map[string]int)
-			entries[addr][label] = 1
+			*keys = append(*keys, ipAddr)
+			entries[ipAddr] = make(map[string]struct{})
+			entries[ipAddr][label] = struct{}{}
 		}
 	}
 }

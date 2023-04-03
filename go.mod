@@ -6,7 +6,7 @@ require (
 	github.com/KimMachineGun/automemlimit v0.2.5
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/miekg/dns v1.1.53
-	github.com/yl2chen/cidranger v1.0.2
+	github.com/monoidic/cidranger v1.0.4
 	go.uber.org/automaxprocs v1.5.2
 )
 

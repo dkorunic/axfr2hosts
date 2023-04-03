@@ -25,11 +25,12 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"strings"
 
 	"github.com/miekg/dns"
-	"github.com/yl2chen/cidranger"
+	"github.com/monoidic/cidranger"
 )
 
 const (
@@ -92,14 +93,39 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 			if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
 				continue
 			}
+
+			ipAddr, ok := netip.AddrFromSlice(t.A)
+			if !ok {
+				continue
+			}
+
 			// if CIDR matching is true, check if IP is whitelisted
 			if doCIDR && ranger != nil {
-				if c, _ := ranger.Contains(t.A); !c {
+				if c, _ := ranger.Contains(ipAddr); !c {
 					continue
 				}
 			}
 
-			processHost(t.Hdr.Name, t.A.String(), zone, t.A, hosts)
+			processHost(t.Hdr.Name, zone, ipAddr, hosts)
+		case *dns.AAAA:
+			// ignore wildcards if ignoreStar is used
+			if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
+				continue
+			}
+
+			ipAddr6, ok := netip.AddrFromSlice(t.AAAA)
+			if !ok {
+				continue
+			}
+
+			// if CIDR matching is true, check if IP is whitelisted
+			if doCIDR && ranger != nil {
+				if c, _ := ranger.Contains(ipAddr6); !c {
+					continue
+				}
+			}
+
+			processHost(t.Hdr.Name, zone, ipAddr6, hosts)
 		case *dns.CNAME:
 			// ignore out-of-zone targets if not using greedyCNAME
 			if !*greedyCNAME {
@@ -119,9 +145,9 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 			}
 
 			// loop through resolved array
-			for _, addr := range addrs {
-				ipAddr := net.ParseIP(addr)
-				if ipAddr == nil {
+			for _, a := range addrs {
+				ipAddr, err := netip.ParseAddr(a)
+				if err != nil {
 					continue
 				}
 
@@ -132,7 +158,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 					}
 				}
 
-				processHost(t.Hdr.Name, addr, zone, ipAddr, hosts)
+				processHost(t.Hdr.Name, zone, ipAddr, hosts)
 			}
 		// every other RR type is skipped over
 		default:
