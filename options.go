@@ -49,6 +49,8 @@ var (
 	verbose      = flag.Bool("verbose", false, "Enable more verbosity")
 	maxTransfers = flag.Uint("max_transfers", maxTransfersDefault, "Maximum parallel zone transfers")
 	maxRetries   = flag.Uint("max_retries", maxRetriesDefault, "Maximum zone transfer attempts")
+	cpuProfile   = flag.String("cpu_profile", "", "CPU profile output file")
+	memProfile   = flag.String("mem_profile", "", "memory profile output file")
 )
 
 func parseFlags() ([]string, string, []string) {

@@ -22,7 +22,11 @@
 package main
 
 import (
+	"fmt"
 	"net/netip"
+	"os"
+	"runtime"
+	"runtime/pprof"
 	"sync"
 
 	_ "github.com/KimMachineGun/automemlimit"
@@ -39,6 +43,37 @@ func main() {
 	defer undo()
 
 	zones, server, cidrList := parseFlags()
+
+	// enable CPU profiling dump on exit
+	if *cpuProfile != "" {
+		f, err := os.Create(*cpuProfile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating CPU profile: %v\n", err)
+		}
+		defer f.Close()
+
+		if err := pprof.StartCPUProfile(f); err != nil {
+			fmt.Fprintf(os.Stderr, "Error starting CPU profile: %v\n", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	// enable memory profile dump on exit
+	if *memProfile != "" {
+		f, err := os.Create(*memProfile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error trying to create memory profile: %v\n", err)
+		}
+		defer f.Close()
+
+		defer func() {
+			runtime.GC()
+
+			if err := pprof.WriteHeapProfile(f); err != nil {
+				fmt.Fprintf(os.Stderr, "Error writing memory profile: %v\n", err)
+			}
+		}()
+	}
 
 	ranger, doCIDR := rangerInit(cidrList)
 	hostChan := make(chan HostEntry, hostChanSize)
