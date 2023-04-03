@@ -9,17 +9,17 @@
 
 ## About
 
-axfr2hosts is a tool meant to do a [DNS zone transfer](https://en.wikipedia.org/wiki/DNS_zone_transfer) in a form of AXFR transaction of one or more zones towards a single DNS server and convert received A and CNAME records from a requested zones into a Un\*x [hosts file](<https://en.wikipedia.org/wiki/Hosts_(file)>) for a sysops use, for instance when DNS server is [otherwise unreachable](https://blog.cloudflare.com/october-2021-facebook-outage/) and/or down.
+axfr2hosts is a tool meant to do a [DNS zone transfer](https://en.wikipedia.org/wiki/DNS_zone_transfer) in a form of AXFR transaction of one or more zones towards a single DNS server and convert received A, AAAA and CNAME records from a DNS responses into a [hosts file](<https://en.wikipedia.org/wiki/Hosts_(file)>) for a local use, for instance when DNS servers are [unreachable](https://blog.cloudflare.com/october-2021-facebook-outage/) and/or down.
 
 By default hosts entries will be sorted its IP as a key and under each entry individual FQDNs will be sorted alphabetically.
 
-If needed, axfr2hosts can also read and parse local RFC 1035 zones (for instance Bind 9 zone files) and process A and CNAME records into a hosts file as described above so that a zone transfer is not needed.
+If needed, axfr2hosts can also read and parse local RFC 1035 zones (for instance BIND 9 zone files) and process A and CNAME records into a hosts file as described above so that a zone transfer is not needed.
 
 ## Requirements
 
 Either of:
 
-- Ability to do a full zone transfer (AXFR), usually permitted with `allow-transfer` in [Bind 9](https://www.isc.org/bind/) or with `allow-axfr-ips` in [PowerDNS](https://www.powerdns.com/),
+- Ability to do a full zone transfer (AXFR), usually permitted with `allow-transfer` in [BIND 9](https://www.isc.org/bind/) or with `allow-axfr-ips` in [PowerDNS](https://www.powerdns.com/),
 - Permissions to read RFC 1035 zone files locally.
 
 ## Installation
@@ -42,14 +42,18 @@ go install github.com/dkorunic/axfr2hosts@latest
 Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] [@server[:port]]
   -cidr_list string
     	Use only targets from CIDR whitelist (comma separated list)
+  -cpu_profile string
+    	CPU profile output file
   -greedy_cname
     	Resolve out-of-zone CNAME targets (default true)
   -ignore_star
     	Ignore wildcard records (default true)
   -max_retries uint
     	Maximum zone transfer attempts (default 3)
-  -max_transfers int
+  -max_transfers uint
     	Maximum parallel zone transfers (default 10)
+  -mem_profile string
+    	memory profile output file
   -strip_domain
     	Strip domain name from FQDN hosts entries
   -strip_unstrip
@@ -90,7 +94,7 @@ If there is a lot of zones that need to be fetched at once, tool works well with
 xargs axfr2hosts @nameserver < list
 ```
 
-Maximum of concurrent zone transfers is limited by `-max_transfers` flag and defaults to `10`, aligned with Bind 9 default (`transfers-out` in Bind 9 `named.conf`).
+Maximum of concurrent zone transfers is limited by `-max_transfers` flag and defaults to `10`, aligned with BIND 9 default (`transfers-out` in BIND 9 `named.conf`).
 
 ### Strip domain name
 
