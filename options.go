@@ -48,7 +48,7 @@ var (
 	stripUnstrip = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
 	verbose      = flag.Bool("verbose", false, "Enable more verbosity")
 	maxTransfers = flag.Uint("max_transfers", maxTransfersDefault, "Maximum parallel zone transfers")
-	maxRetries   = flag.Uint("max_retries", maxRetriesDefault, "Maximum zone transfer attempts")
+	maxRetries   = flag.Uint("max_retries", maxRetriesDefault, "Maximum DNS zone transfer attempts and/or query retries")
 	cpuProfile   = flag.String("cpu_profile", "", "CPU profile output file")
 	memProfile   = flag.String("mem_profile", "", "memory profile output file")
 )

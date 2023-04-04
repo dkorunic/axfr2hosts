@@ -29,6 +29,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/miekg/dns"
 	"github.com/monoidic/cidranger"
 )
@@ -129,7 +130,17 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 		case *dns.CNAME:
 			// ignore out-of-zone targets if not using greedyCNAME
 			if !*greedyCNAME {
-				cname, err := net.LookupCNAME(t.Hdr.Name)
+				var cname string
+
+				err := retry.Do(
+					func() error {
+						var err error
+						cname, err = net.LookupCNAME(t.Hdr.Name)
+
+						return err
+					},
+					retry.Attempts(*maxRetries),
+				)
 				if err != nil {
 					continue
 				}
@@ -139,7 +150,17 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 				}
 			}
 
-			addrs, err := net.LookupHost(t.Hdr.Name)
+			var addrs []string
+
+			err := retry.Do(
+				func() error {
+					var err error
+					addrs, err = net.LookupHost(t.Hdr.Name)
+
+					return err
+				},
+				retry.Attempts(*maxRetries),
+			)
 			if err != nil {
 				continue
 			}
