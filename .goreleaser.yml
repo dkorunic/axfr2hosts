@@ -24,6 +24,8 @@ builds:
         goarch: arm
 universal_binaries:
   - replace: true
+changelog:
+  sort: asc
 archives:
   - replacements:
       linux: Linux
@@ -38,13 +40,30 @@ archives:
     files:
       - README.md
       - LICENSE
+      - src: dist/CHANGELOG.md
+        dst: ""
+        strip_parent: true
 checksum:
   name_template: "checksums.txt"
 snapshot:
   name_template: "{{ .Tag }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
+nfpms:
+  - package_name: axfr2hosts
+    vendor: Dinko Korunic
+    homepage: https://github.com/dkorunic/axfr2hosts
+    maintainer: Dinko Korunic <dkorunic@gmail.com>
+    description: Fetches one or more DNS zones via AXFR and dumps in Unix hosts format for local use
+    license: MIT
+    formats:
+      - apk
+      - deb
+      - rpm
+      - termux.deb
+      - archlinux
+    bindir: /usr/bin
+    section: net
+    priority: optional
+    deb:
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
