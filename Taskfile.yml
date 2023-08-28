@@ -18,8 +18,6 @@ vars:
     sh: date -u '+%Y-%m-%dT%H:%M:%SZ'
 
 env:
-  GOOS: linux
-  GOARCH: amd64
   CGO_ENABLED: 0
 
 tasks:
