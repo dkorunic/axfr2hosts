@@ -31,7 +31,7 @@ tasks:
       - go get -u
       - go mod tidy
 
-  check:
+  update-major:
     cmds:
       - gomajor list
 
@@ -39,6 +39,7 @@ tasks:
     cmds:
       - gci write .
       - gofumpt -l -w .
+      - betteralign -apply ./...
 
   build:
     cmds:
