@@ -3,7 +3,7 @@ module github.com/dkorunic/axfr2hosts
 go 1.21.0
 
 require (
-	github.com/KimMachineGun/automemlimit v0.3.0
+	github.com/KimMachineGun/automemlimit v0.4.0
 	github.com/avast/retry-go/v4 v4.5.1
 	github.com/miekg/dns v1.1.57
 	github.com/monoidic/cidranger v1.0.4
@@ -18,10 +18,10 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
+	golang.org/x/exp v0.0.0-20231127185646-65229373498e // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.18.0 // indirect
-	golang.org/x/sys v0.14.1-0.20231108175955-e4099bfacb8c // indirect
-	golang.org/x/tools v0.15.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/tools v0.16.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
