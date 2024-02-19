@@ -63,7 +63,6 @@ func zoneTransfer(zone string, server string) []dns.RR {
 		func() error {
 			var err error
 			c, err = tr.In(m, server)
-
 			if err != nil {
 				return fmt.Errorf("error performing zone transfer: %w", err)
 			}
