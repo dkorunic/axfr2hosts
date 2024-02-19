@@ -35,6 +35,7 @@ import (
 
 const (
 	mapSize      = 4096
+	subMapSize   = 16
 	hostChanSize = 64
 )
 

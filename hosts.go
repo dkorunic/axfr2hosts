@@ -64,7 +64,7 @@ func writeHostEntries(hosts <-chan HostEntry, keys *[]netip.Addr, entries HostMa
 			entries[ipAddr][label] = struct{}{}
 		} else {
 			*keys = append(*keys, ipAddr)
-			entries[ipAddr] = make(map[string]struct{})
+			entries[ipAddr] = make(map[string]struct{}, subMapSize)
 			entries[ipAddr][label] = struct{}{}
 		}
 	}
