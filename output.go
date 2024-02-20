@@ -27,10 +27,12 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/dolthub/swiss"
 )
 
 // displayHostEntries does a final Unix hosts file output with a list of unique IPs and labels.
-func displayHostEntries(keysAddr []netip.Addr, results HostMap) {
+func displayHostEntries(keysAddr []netip.Addr, results *swiss.Map[netip.Addr, *swiss.Map[string, struct{}]]) {
 	var (
 		x, last int
 		sb      strings.Builder
@@ -46,20 +48,27 @@ func displayHostEntries(keysAddr []netip.Addr, results HostMap) {
 
 	for i := range keysAddr {
 		ipAddr := keysAddr[i]
-		labelMap := results[ipAddr]
+
+		labelMap, ok := results.Get(ipAddr)
+		if !ok {
+			continue
+		}
 
 		sb.Reset()
 		sb.WriteString(ipAddr.String())
 		sb.WriteString("\t")
 
-		last = len(labelMap)
+		last = labelMap.Count()
+
+		keysHost := make([]string, 0, last)
+
+		labelMap.Iter(func(k string, v struct{}) bool {
+			keysHost = append(keysHost, k)
+
+			return false
+		})
 
 		// sorting by hostname
-		keysHost := make([]string, 0, last)
-		for k := range labelMap {
-			keysHost = append(keysHost, k)
-		}
-
 		sort.Strings(keysHost)
 
 		x = 0
