@@ -113,6 +113,7 @@ func main() {
 			// otherwise assume remote AXFR-able zones
 			wgWrk.Add(1)
 			semAXFR <- struct{}{}
+
 			go func() {
 				defer wgWrk.Done()
 

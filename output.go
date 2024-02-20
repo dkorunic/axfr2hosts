@@ -66,6 +66,7 @@ func displayHostEntries(keysAddr []netip.Addr, results HostMap) {
 
 		for _, k := range keysHost {
 			sb.WriteString(k)
+
 			x++
 
 			if x != last {

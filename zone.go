@@ -28,6 +28,7 @@ import (
 	"net/netip"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/miekg/dns"
@@ -87,104 +88,126 @@ func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger, hosts c
 func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts chan<- HostEntry,
 	zoneRecords []dns.RR,
 ) {
+	var wg sync.WaitGroup
+
 	for _, rr := range zoneRecords {
 		switch t := rr.(type) {
 		case *dns.A:
-			// ignore wildcards if ignoreStar is used
-			if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
-				continue
-			}
+			wg.Add(1)
 
-			ipAddr, ok := unmapAddrFromSlice(t.A)
-			if !ok {
-				continue
-			}
+			go func() {
+				defer wg.Done()
 
-			// if CIDR matching is true, check if IP is whitelisted
-			if doCIDR && ranger != nil {
-				if c, _ := ranger.Contains(ipAddr); !c {
-					continue
+				// ignore wildcards if ignoreStar is used
+				if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
+					return
 				}
-			}
 
-			processHost(t.Hdr.Name, zone, ipAddr, hosts)
+				ipAddr, ok := unmapAddrFromSlice(t.A)
+				if !ok {
+					return
+				}
+
+				// if CIDR matching is true, check if IP is whitelisted
+				if doCIDR && ranger != nil {
+					if c, _ := ranger.Contains(ipAddr); !c {
+						return
+					}
+				}
+
+				processHost(t.Hdr.Name, zone, ipAddr, hosts)
+			}()
 		case *dns.AAAA:
-			// ignore wildcards if ignoreStar is used
-			if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
-				continue
-			}
+			wg.Add(1)
 
-			ipAddr6, ok := unmapAddrFromSlice(t.AAAA)
-			if !ok {
-				continue
-			}
+			go func() {
+				defer wg.Done()
 
-			// if CIDR matching is true, check if IP is whitelisted
-			if doCIDR && ranger != nil {
-				if c, _ := ranger.Contains(ipAddr6); !c {
-					continue
+				// ignore wildcards if ignoreStar is used
+				if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
+					return
 				}
-			}
 
-			processHost(t.Hdr.Name, zone, ipAddr6, hosts)
+				ipAddr6, ok := unmapAddrFromSlice(t.AAAA)
+				if !ok {
+					return
+				}
+
+				// if CIDR matching is true, check if IP is whitelisted
+				if doCIDR && ranger != nil {
+					if c, _ := ranger.Contains(ipAddr6); !c {
+						return
+					}
+				}
+
+				processHost(t.Hdr.Name, zone, ipAddr6, hosts)
+			}()
 		case *dns.CNAME:
-			// ignore out-of-zone targets if not using greedyCNAME
-			if !*greedyCNAME {
-				var cname string
+			wg.Add(1)
+
+			go func() {
+				defer wg.Done()
+
+				// ignore out-of-zone targets if not using greedyCNAME
+				if !*greedyCNAME {
+					var cname string
+
+					err := retry.Do(
+						func() error {
+							var err error
+							cname, err = net.LookupCNAME(t.Hdr.Name)
+
+							return err
+						},
+						retry.Attempts(*maxRetries),
+					)
+					if err != nil {
+						return
+					}
+
+					if !strings.HasSuffix(cname, zone) {
+						return
+					}
+				}
+
+				var addrs []string
 
 				err := retry.Do(
 					func() error {
 						var err error
-						cname, err = net.LookupCNAME(t.Hdr.Name)
+						addrs, err = net.LookupHost(t.Hdr.Name)
 
 						return err
 					},
 					retry.Attempts(*maxRetries),
 				)
 				if err != nil {
-					continue
+					return
 				}
 
-				if !strings.HasSuffix(cname, zone) {
-					continue
-				}
-			}
-
-			var addrs []string
-
-			err := retry.Do(
-				func() error {
-					var err error
-					addrs, err = net.LookupHost(t.Hdr.Name)
-
-					return err
-				},
-				retry.Attempts(*maxRetries),
-			)
-			if err != nil {
-				continue
-			}
-
-			// loop through resolved array
-			for _, a := range addrs {
-				ipAddr, err := unmapParseAddr(a)
-				if err != nil {
-					continue
-				}
-
-				// if CIDR matching is true, check if IP is whitelisted
-				if doCIDR && ranger != nil {
-					if c, _ := ranger.Contains(ipAddr); !c {
+				// loop through resolved array
+				for _, a := range addrs {
+					ipAddr, err := unmapParseAddr(a)
+					if err != nil {
 						continue
 					}
-				}
 
-				processHost(t.Hdr.Name, zone, ipAddr, hosts)
-			}
+					// if CIDR matching is true, check if IP is whitelisted
+					if doCIDR && ranger != nil {
+						if c, _ := ranger.Contains(ipAddr); !c {
+							continue
+						}
+					}
+
+					processHost(t.Hdr.Name, zone, ipAddr, hosts)
+				}
+			}()
 		// every other RR type is skipped over
 		default:
 		}
 	}
+
+	wg.Wait()
 }
 
 // zoneParser is parsing loading zones into memory and parsing them, returning slice of RRs.
