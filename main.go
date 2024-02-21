@@ -77,6 +77,8 @@ func main() {
 		}()
 	}
 
+	_ = setNofile()
+
 	ranger, doCIDR := rangerInit(cidrList)
 	hostChan := make(chan HostEntry, hostChanSize)
 
