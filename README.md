@@ -49,11 +49,15 @@ Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] [@server[:port]]
   -ignore_star
     	Ignore wildcard records (default true)
   -max_retries uint
-    	Maximum zone transfer attempts (default 3)
+    	Maximum DNS zone transfer attempts and/or query retries (default 3)
   -max_transfers uint
     	Maximum parallel zone transfers (default 10)
   -mem_profile string
     	memory profile output file
+  -resolver_address string
+    	DNS resolver (DNS recursor) IP address
+  -resolver_timeout duration
+    	DNS resolver timeout (default 5s)
   -strip_domain
     	Strip domain name from FQDN hosts entries
   -strip_unstrip

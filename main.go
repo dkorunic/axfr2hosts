@@ -101,8 +101,6 @@ func main() {
 
 	// routines for processing local and remote zones
 	for _, zone := range zones {
-		zone := zone
-
 		if server == "" {
 			// there is no remote server, so assume zones are local Bind9 files
 			wgWrk.Add(1)

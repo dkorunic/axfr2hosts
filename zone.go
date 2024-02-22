@@ -22,6 +22,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -90,6 +91,25 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 ) {
 	var wg sync.WaitGroup
 
+	var r net.Resolver
+
+	if *resolverAddress != "" {
+		// custom DNS resolver
+		r = net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{
+					Timeout: *resolverTimeout,
+				}
+
+				return d.DialContext(ctx, network, *resolverAddress)
+			},
+		}
+	} else {
+		r = net.Resolver{}
+	}
+
+	// process each RR
 	for _, rr := range zoneRecords {
 		switch t := rr.(type) {
 		case *dns.A:
@@ -148,6 +168,8 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 			go func() {
 				defer wg.Done()
 
+				ctx := context.Background()
+
 				// ignore out-of-zone targets if not using greedyCNAME
 				if !*greedyCNAME {
 					var cname string
@@ -155,11 +177,12 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 					err := retry.Do(
 						func() error {
 							var err error
-							cname, err = net.LookupCNAME(t.Hdr.Name)
+							cname, err = r.LookupCNAME(ctx, t.Hdr.Name)
 
 							return err
 						},
 						retry.Attempts(*maxRetries),
+						retry.Context(ctx),
 					)
 					if err != nil {
 						return
@@ -175,11 +198,12 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 				err := retry.Do(
 					func() error {
 						var err error
-						addrs, err = net.LookupHost(t.Hdr.Name)
+						addrs, err = r.LookupHost(ctx, t.Hdr.Name)
 
 						return err
 					},
 					retry.Attempts(*maxRetries),
+					retry.Context(ctx),
 				)
 				if err != nil {
 					return

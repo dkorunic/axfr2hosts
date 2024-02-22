@@ -27,30 +27,34 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
-	endingDot           = "."
-	dnsPort             = "53"
-	dnsPrefix           = "@"
-	cidrSeparator       = ","
-	portSeparator       = ":"
-	projectHome         = "https://github.com/dkorunic/axfr2hosts"
-	maxTransfersDefault = 10
-	maxRetriesDefault   = 3
+	endingDot              = "."
+	dnsPort                = "53"
+	dnsPrefix              = "@"
+	cidrSeparator          = ","
+	portSeparator          = ":"
+	projectHome            = "https://github.com/dkorunic/axfr2hosts"
+	maxTransfersDefault    = 10
+	maxRetriesDefault      = 3
+	defaultResolverTimeout = 5000 * time.Millisecond
 )
 
 var (
-	greedyCNAME  = flag.Bool("greedy_cname", true, "Resolve out-of-zone CNAME targets")
-	ignoreStar   = flag.Bool("ignore_star", true, "Ignore wildcard records")
-	cidrString   = flag.String("cidr_list", "", "Use only targets from CIDR whitelist (comma separated list)")
-	stripDomain  = flag.Bool("strip_domain", false, "Strip domain name from FQDN hosts entries")
-	stripUnstrip = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
-	verbose      = flag.Bool("verbose", false, "Enable more verbosity")
-	maxTransfers = flag.Uint("max_transfers", maxTransfersDefault, "Maximum parallel zone transfers")
-	maxRetries   = flag.Uint("max_retries", maxRetriesDefault, "Maximum DNS zone transfer attempts and/or query retries")
-	cpuProfile   = flag.String("cpu_profile", "", "CPU profile output file")
-	memProfile   = flag.String("mem_profile", "", "memory profile output file")
+	greedyCNAME     = flag.Bool("greedy_cname", true, "Resolve out-of-zone CNAME targets")
+	ignoreStar      = flag.Bool("ignore_star", true, "Ignore wildcard records")
+	cidrString      = flag.String("cidr_list", "", "Use only targets from CIDR whitelist (comma separated list)")
+	stripDomain     = flag.Bool("strip_domain", false, "Strip domain name from FQDN hosts entries")
+	stripUnstrip    = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
+	verbose         = flag.Bool("verbose", false, "Enable more verbosity")
+	maxTransfers    = flag.Uint("max_transfers", maxTransfersDefault, "Maximum parallel zone transfers")
+	maxRetries      = flag.Uint("max_retries", maxRetriesDefault, "Maximum DNS zone transfer attempts and/or query retries")
+	cpuProfile      = flag.String("cpu_profile", "", "CPU profile output file")
+	memProfile      = flag.String("mem_profile", "", "memory profile output file")
+	resolverAddress = flag.String("resolver_address", "", "DNS resolver (DNS recursor) IP address")
+	resolverTimeout = flag.Duration("resolver_timeout", defaultResolverTimeout, "DNS resolver timeout")
 )
 
 func parseFlags() ([]string, string, []string) {
@@ -108,6 +112,11 @@ func parseFlags() ([]string, string, []string) {
 	var cidrList []string
 	if len(*cidrString) > 0 {
 		cidrList = strings.Split(*cidrString, cidrSeparator)
+	}
+
+	// check if resolverIP is in server:port format
+	if !strings.Contains(*resolverAddress, portSeparator) {
+		*resolverAddress = net.JoinHostPort(*resolverAddress, dnsPort)
 	}
 
 	return zones, server, cidrList
