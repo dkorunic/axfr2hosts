@@ -7,23 +7,22 @@ toolchain go1.22.0
 require (
 	github.com/KimMachineGun/automemlimit v0.5.0
 	github.com/avast/retry-go/v4 v4.5.1
-	github.com/dolthub/swiss v0.2.1
+	github.com/cockroachdb/swiss v0.0.0-20240218003604-fa7bdb1c8c21
 	github.com/miekg/dns v1.1.58
 	github.com/monoidic/cidranger v1.0.4
 	go.uber.org/automaxprocs v1.5.3
 )
 
 require (
-	github.com/cilium/ebpf v0.13.0 // indirect
+	github.com/cilium/ebpf v0.13.2 // indirect
 	github.com/containerd/cgroups/v3 v3.0.3 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/dolthub/maphash v0.1.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a // indirect
+	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect

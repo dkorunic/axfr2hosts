@@ -25,7 +25,7 @@ import (
 	"net/netip"
 	"strings"
 
-	"github.com/dolthub/swiss"
+	"github.com/cockroachdb/swiss"
 )
 
 // HostEntry contains label, addr and ipAddr for sending through a channel.
@@ -63,7 +63,7 @@ func writeHostEntries(hosts <-chan HostEntry, keys *[]netip.Addr, entries *swiss
 			v.Put(label, struct{}{})
 		} else {
 			*keys = append(*keys, ipAddr)
-			tmpMap := swiss.NewMap[string, struct{}](subMapSize)
+			tmpMap := swiss.New[string, struct{}](subMapSize)
 			tmpMap.Put(label, struct{}{})
 			entries.Put(ipAddr, tmpMap)
 		}

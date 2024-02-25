@@ -30,7 +30,7 @@ import (
 	"sync"
 
 	_ "github.com/KimMachineGun/automemlimit"
-	"github.com/dolthub/swiss"
+	"github.com/cockroachdb/swiss"
 	"go.uber.org/automaxprocs/maxprocs"
 )
 
@@ -82,7 +82,7 @@ func main() {
 	ranger, doCIDR := rangerInit(cidrList)
 	hostChan := make(chan HostEntry, hostChanSize)
 
-	entries := swiss.NewMap[netip.Addr, *swiss.Map[string, struct{}]](mapSize)
+	entries := swiss.New[netip.Addr, *swiss.Map[string, struct{}]](mapSize)
 	keys := make([]netip.Addr, 0, mapSize)
 
 	var wgMon, wgWrk sync.WaitGroup
