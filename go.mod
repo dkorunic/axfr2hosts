@@ -7,7 +7,7 @@ toolchain go1.22.0
 require (
 	github.com/KimMachineGun/automemlimit v0.5.0
 	github.com/avast/retry-go/v4 v4.5.1
-	github.com/cockroachdb/swiss v0.0.0-20240218003604-fa7bdb1c8c21
+	github.com/cockroachdb/swiss v0.0.0-20240226223847-16079ed4d941
 	github.com/miekg/dns v1.1.58
 	github.com/monoidic/cidranger v1.0.4
 	go.uber.org/automaxprocs v1.5.3
