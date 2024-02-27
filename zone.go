@@ -106,7 +106,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 			},
 		}
 	} else {
-		r = net.Resolver{}
+		r = net.Resolver{PreferGo: true}
 	}
 
 	// process each RR

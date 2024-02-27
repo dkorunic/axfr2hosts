@@ -36,7 +36,10 @@ func displayHostEntries(keysAddr []netip.Addr, results *swiss.Map[netip.Addr, *s
 	var (
 		x, last int
 		sb      strings.Builder
+		ipAddr  netip.Addr
 	)
+
+	keysHost := make([]string, 0, subMapSize)
 
 	t := time.Now().Format(time.RFC1123)
 	fmt.Printf("# axfr2hosts generated list at %v\n", t)
@@ -47,7 +50,7 @@ func displayHostEntries(keysAddr []netip.Addr, results *swiss.Map[netip.Addr, *s
 	})
 
 	for i := range keysAddr {
-		ipAddr := keysAddr[i]
+		ipAddr = keysAddr[i]
 
 		labelMap, ok := results.Get(ipAddr)
 		if !ok {
@@ -60,7 +63,7 @@ func displayHostEntries(keysAddr []netip.Addr, results *swiss.Map[netip.Addr, *s
 
 		last = labelMap.Len()
 
-		keysHost := make([]string, 0, last)
+		keysHost = keysHost[:0]
 
 		labelMap.All(func(k string, v struct{}) bool {
 			keysHost = append(keysHost, k)
