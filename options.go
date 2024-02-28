@@ -115,7 +115,7 @@ func parseFlags() ([]string, string, []string) {
 	}
 
 	// check if resolverIP is in server:port format
-	if !strings.Contains(*resolverAddress, portSeparator) {
+	if *resolverAddress != "" && !strings.Contains(*resolverAddress, portSeparator) {
 		*resolverAddress = net.JoinHostPort(*resolverAddress, dnsPort)
 	}
 

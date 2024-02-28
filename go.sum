@@ -4,8 +4,8 @@ github.com/avast/retry-go/v4 v4.5.1 h1:AxIx0HGi4VZ3I02jr78j5lZ3M6x1E0Ivxa6b0pUUh
 github.com/avast/retry-go/v4 v4.5.1/go.mod h1:/sipNsvNB3RRuT5iNcb6h73nw3IBmXJ/H3XrCQYSOpc=
 github.com/cilium/ebpf v0.13.2 h1:uhLimLX+jF9BTPPvoCUYh/mBeoONkjgaJ9w9fn0mRj4=
 github.com/cilium/ebpf v0.13.2/go.mod h1:DHp1WyrLeiBh19Cf/tfiSMhqheEiK8fXFZ4No0P1Hso=
-github.com/cockroachdb/swiss v0.0.0-20240226223847-16079ed4d941 h1:07qtRTYzDBVh8C6ApoY7rc7wB774oYQe6Zn9dSmkC7Q=
-github.com/cockroachdb/swiss v0.0.0-20240226223847-16079ed4d941/go.mod h1:kvAEHbo4OwYBZpQIKRqjj2hxpFj8WhgtzDg8ZtrhaIc=
+github.com/cockroachdb/swiss v0.0.0-20240228123450-7b50593e7686 h1:IbAPtNR6gBDcdknthFOkBIqpbPm5Yzjh4lfs2Zd5Flw=
+github.com/cockroachdb/swiss v0.0.0-20240228123450-7b50593e7686/go.mod h1:kvAEHbo4OwYBZpQIKRqjj2hxpFj8WhgtzDg8ZtrhaIc=
 github.com/containerd/cgroups/v3 v3.0.3 h1:S5ByHZ/h9PMe5IOQoN7E+nMc2UcLEM/V48DGDJ9kip0=
 github.com/containerd/cgroups/v3 v3.0.3/go.mod h1:8HBe7V3aWGLFPd/k03swSIsGjZhHI2WzJmticMgVuz0=
 github.com/coreos/go-systemd/v22 v22.5.0 h1:RrqgGjYQKalulkV8NGVIfkXQf6YYmOyiJKk8iXXhfZs=
