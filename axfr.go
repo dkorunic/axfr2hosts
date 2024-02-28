@@ -22,6 +22,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -39,6 +40,8 @@ const (
 
 // zoneTransfer prepares and executes AXFR towards a specific DNS server, returning DNS RR slice.
 func zoneTransfer(zone string, server string) []dns.RR {
+	ctx := context.Background()
+
 	// make sure zone always ends with dot
 	if !strings.HasSuffix(zone, endingDot) {
 		zone = strings.Join([]string{zone, endingDot}, "")
@@ -71,6 +74,7 @@ func zoneTransfer(zone string, server string) []dns.RR {
 			return nil
 		},
 		retry.Attempts(*maxRetries),
+		retry.Context(ctx),
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: AXFR failure for zone %q / server %q, will skip over: %v\n", zone, server, err)

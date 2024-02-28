@@ -39,7 +39,7 @@ const (
 	projectHome            = "https://github.com/dkorunic/axfr2hosts"
 	maxTransfersDefault    = 10
 	maxRetriesDefault      = 3
-	defaultResolverTimeout = 5000 * time.Millisecond
+	defaultResolverTimeout = 10 * time.Second
 )
 
 var (
@@ -50,11 +50,11 @@ var (
 	stripUnstrip    = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
 	verbose         = flag.Bool("verbose", false, "Enable more verbosity")
 	maxTransfers    = flag.Uint("max_transfers", maxTransfersDefault, "Maximum parallel zone transfers")
-	maxRetries      = flag.Uint("max_retries", maxRetriesDefault, "Maximum DNS zone transfer attempts and/or query retries")
+	maxRetries      = flag.Uint("max_retries", maxRetriesDefault, "Maximum DNS zone transfer attempts")
 	cpuProfile      = flag.String("cpu_profile", "", "CPU profile output file")
 	memProfile      = flag.String("mem_profile", "", "memory profile output file")
 	resolverAddress = flag.String("resolver_address", "", "DNS resolver (DNS recursor) IP address")
-	resolverTimeout = flag.Duration("resolver_timeout", defaultResolverTimeout, "DNS resolver timeout")
+	resolverTimeout = flag.Duration("resolver_timeout", defaultResolverTimeout, "DNS queries timeout (should be 2-10s)")
 )
 
 func parseFlags() ([]string, string, []string) {

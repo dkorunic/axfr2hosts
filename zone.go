@@ -31,7 +31,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/avast/retry-go/v4"
 	"github.com/miekg/dns"
 	"github.com/monoidic/cidranger"
 )
@@ -98,9 +97,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 		r = net.Resolver{
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{
-					Timeout: *resolverTimeout,
-				}
+				d := net.Dialer{}
 
 				return d.DialContext(ctx, network, *resolverAddress)
 			},
@@ -172,39 +169,17 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 
 				// ignore out-of-zone targets if not using greedyCNAME
 				if !*greedyCNAME {
-					var cname string
-
-					err := retry.Do(
-						func() error {
-							var err error
-							cname, err = r.LookupCNAME(ctx, t.Hdr.Name)
-
-							return err
-						},
-						retry.Attempts(*maxRetries),
-						retry.Context(ctx),
-					)
+					cnames, err := lookup(ctx, t.Hdr.Name, dns.TypeCNAME, &r)
 					if err != nil {
 						return
 					}
 
-					if !strings.HasSuffix(cname, zone) {
+					if len(cnames) > 0 && !strings.HasSuffix(cnames[0], zone) {
 						return
 					}
 				}
 
-				var addrs []string
-
-				err := retry.Do(
-					func() error {
-						var err error
-						addrs, err = r.LookupHost(ctx, t.Hdr.Name)
-
-						return err
-					},
-					retry.Attempts(*maxRetries),
-					retry.Context(ctx),
-				)
+				addrs, err := lookup(ctx, t.Hdr.Name, dns.TypeA, &r)
 				if err != nil {
 					return
 				}
