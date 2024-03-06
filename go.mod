@@ -7,7 +7,7 @@ toolchain go1.22.0
 require (
 	github.com/KimMachineGun/automemlimit v0.5.0
 	github.com/avast/retry-go/v4 v4.5.1
-	github.com/cockroachdb/swiss v0.0.0-20240229210926-21ec5ae7d7ba
+	github.com/cockroachdb/swiss v0.0.0-20240303172742-c161743eb608
 	github.com/miekg/dns v1.1.58
 	github.com/monoidic/cidranger v1.0.4
 	go.uber.org/automaxprocs v1.5.3
@@ -24,9 +24,9 @@ require (
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
-	golang.org/x/mod v0.15.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
-	golang.org/x/tools v0.18.0 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	golang.org/x/mod v0.16.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/tools v0.19.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 )
