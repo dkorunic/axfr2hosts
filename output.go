@@ -65,7 +65,7 @@ func displayHostEntries(keysAddr []netip.Addr, results *swiss.Map[netip.Addr, *s
 
 		keysHost = keysHost[:0]
 
-		labelMap.All(func(k string, v struct{}) bool {
+		labelMap.All(func(k string, _ struct{}) bool {
 			keysHost = append(keysHost, k)
 
 			return true

@@ -42,9 +42,7 @@ func lookupFunc(ctx context.Context, s string, t uint16, r *net.Resolver) func()
 	switch t {
 	case dns.TypeCNAME:
 		return func() (interface{}, error) {
-			var cancel context.CancelFunc
-
-			ctx, cancel = context.WithTimeout(ctx, *resolverTimeout)
+			ctx, cancel := context.WithTimeout(ctx, *resolverTimeout)
 			defer cancel()
 
 			rr, err := r.LookupCNAME(ctx, s)
@@ -53,9 +51,7 @@ func lookupFunc(ctx context.Context, s string, t uint16, r *net.Resolver) func()
 		}
 	case dns.TypeA, dns.TypeAAAA:
 		return func() (interface{}, error) {
-			var cancel context.CancelFunc
-
-			ctx, cancel = context.WithTimeout(ctx, *resolverTimeout)
+			ctx, cancel := context.WithTimeout(ctx, *resolverTimeout)
 			defer cancel()
 
 			return r.LookupHost(ctx, s)

@@ -96,7 +96,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts cha
 		// custom DNS resolver
 		r = net.Resolver{
 			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
 				d := net.Dialer{}
 
 				return d.DialContext(ctx, network, *resolverAddress)
