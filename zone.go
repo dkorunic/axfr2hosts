@@ -41,7 +41,7 @@ const (
 )
 
 // processRemoteZone is calling zoneTransfer() for AXFR and processRecords() for handling each valid RR.
-func processRemoteZone(zone string, server string, doCIDR bool, ranger cidranger.Ranger, hosts chan<- HostEntry) {
+func processRemoteZone(zone, server string, doCIDR bool, ranger cidranger.Ranger, hosts chan<- HostEntry) {
 	if *verbose {
 		fmt.Fprintf(os.Stderr, "Info: doing AXFR for zone %q / server %q\n", zone, server)
 	}

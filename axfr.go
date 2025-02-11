@@ -39,7 +39,7 @@ const (
 )
 
 // zoneTransfer prepares and executes AXFR towards a specific DNS server, returning DNS RR slice.
-func zoneTransfer(zone string, server string) []dns.RR {
+func zoneTransfer(zone, server string) []dns.RR {
 	ctx := context.Background()
 
 	// make sure zone always ends with dot
