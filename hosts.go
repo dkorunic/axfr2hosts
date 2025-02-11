@@ -24,8 +24,6 @@ package main
 import (
 	"net/netip"
 	"strings"
-
-	"github.com/cockroachdb/swiss"
 )
 
 // HostEntry contains label, addr and ipAddr for sending through a channel.
@@ -33,6 +31,9 @@ type HostEntry struct {
 	ipAddr netip.Addr
 	label  string
 }
+
+// HostMap contains map of addresses and labels.
+type HostMap map[netip.Addr]map[string]struct{}
 
 // processHost cleans FQDN and optionally shortens it, calling low-level writeHostEntries and returning updated hosts
 // map and keys slice.
@@ -56,16 +57,15 @@ func processHost(label, zone string, ipAddr netip.Addr, hosts chan<- HostEntry) 
 }
 
 // writeHostEntries updates hosts map with a new label-IP pair, returning updated hosts map and keys slice.
-func writeHostEntries(hosts <-chan HostEntry, keys *[]netip.Addr, entries *swiss.Map[netip.Addr, *swiss.Map[string, struct{}]]) {
+func writeHostEntries(hosts <-chan HostEntry, keys *[]netip.Addr, entries HostMap) {
 	for x := range hosts {
 		label, ipAddr := x.label, x.ipAddr
-		if v, ok := entries.Get(ipAddr); ok {
-			v.Put(label, struct{}{})
+		if _, ok := entries[ipAddr]; ok {
+			entries[ipAddr][label] = struct{}{}
 		} else {
 			*keys = append(*keys, ipAddr)
-			tmpMap := swiss.New[string, struct{}](subMapSize)
-			tmpMap.Put(label, struct{}{})
-			entries.Put(ipAddr, tmpMap)
+			entries[ipAddr] = make(map[string]struct{}, subMapSize)
+			entries[ipAddr][label] = struct{}{}
 		}
 	}
 }

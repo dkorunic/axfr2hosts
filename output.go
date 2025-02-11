@@ -27,12 +27,10 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/cockroachdb/swiss"
 )
 
 // displayHostEntries does a final Unix hosts file output with a list of unique IPs and labels.
-func displayHostEntries(keysAddr []netip.Addr, results *swiss.Map[netip.Addr, *swiss.Map[string, struct{}]]) {
+func displayHostEntries(keysAddr []netip.Addr, results HostMap) {
 	var (
 		x, last int
 		sb      strings.Builder
@@ -51,25 +49,19 @@ func displayHostEntries(keysAddr []netip.Addr, results *swiss.Map[netip.Addr, *s
 
 	for i := range keysAddr {
 		ipAddr = keysAddr[i]
-
-		labelMap, ok := results.Get(ipAddr)
-		if !ok {
-			continue
-		}
+		labelMap := results[ipAddr]
 
 		sb.Reset()
 		sb.WriteString(ipAddr.String())
 		sb.WriteString("\t")
 
-		last = labelMap.Len()
+		last = len(labelMap)
 
 		keysHost = keysHost[:0]
 
-		labelMap.All(func(k string, _ struct{}) bool {
+		for k := range labelMap {
 			keysHost = append(keysHost, k)
-
-			return true
-		})
+		}
 
 		// sorting by hostname
 		sort.Strings(keysHost)

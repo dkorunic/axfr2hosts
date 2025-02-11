@@ -9,16 +9,7 @@ linters:
     - varnamelen
     - cyclop
     - gochecknoglobals
-    - exhaustivestruct
     - exhaustruct
     - lll
     - depguard
-    - deadcode
-    - nosnakecase
-    - scopelint
-    - golint
-    - interfacer
-    - maligned
-    - varcheck
-    - structcheck
-    - ifshort
+    - gomnd

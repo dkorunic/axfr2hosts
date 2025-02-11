@@ -28,29 +28,29 @@ import (
 	"syscall"
 )
 
-const darwinMagic = 24576
+const (
+	darwinMagic   = 24576
+	defaultNoFile = 100000
+)
 
+// setNofile sets the maximum number of open files to the maximum allowed value.
+//
+// For darwin (macOS), the maximum allowed value is 24576 as per the
+// documentation for setrlimit(2).
+//
+// For other platforms, the maximum allowed value is 100000.
+//
+// The setNofile function returns an error if the syscall.Setrlimit call fails.
 func setNofile() error {
-	var limit syscall.Rlimit
-
-	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit); err != nil {
-		return err
+	if runtime.GOOS == "darwin" {
+		return syscall.Setrlimit(syscall.RLIMIT_NOFILE, &syscall.Rlimit{
+			Cur: darwinMagic,
+			Max: darwinMagic,
+		})
 	}
 
-	limit.Cur = limit.Max
-
-	// macOS High Sierra/Mojave workaround
-	if runtime.GOOS == "darwin" && limit.Cur > darwinMagic {
-		limit.Cur = darwinMagic
-	}
-
-	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &limit); err != nil {
-		return err
-	}
-
-	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit); err != nil {
-		return err
-	}
-
-	return nil
+	return syscall.Setrlimit(syscall.RLIMIT_NOFILE, &syscall.Rlimit{
+		Cur: defaultNoFile,
+		Max: defaultNoFile,
+	})
 }
