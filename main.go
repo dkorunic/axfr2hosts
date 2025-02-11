@@ -29,7 +29,8 @@ import (
 	"runtime/pprof"
 	"sync"
 
-	_ "github.com/KimMachineGun/automemlimit"
+	"github.com/KimMachineGun/automemlimit/memlimit"
+	_ "github.com/KimMachineGun/automemlimit/memlimit"
 	"go.uber.org/automaxprocs/maxprocs"
 )
 
@@ -37,9 +38,20 @@ const (
 	mapSize      = 4096
 	subMapSize   = 8
 	hostChanSize = 64
+	maxMemRatio  = 0.9
 )
 
 func main() {
+	_, _ = memlimit.SetGoMemLimitWithOpts(
+		memlimit.WithRatio(maxMemRatio),
+		memlimit.WithProvider(
+			memlimit.ApplyFallback(
+				memlimit.FromCgroup,
+				memlimit.FromSystem,
+			),
+		),
+	)
+
 	undo, _ := maxprocs.Set()
 	defer undo()
 
