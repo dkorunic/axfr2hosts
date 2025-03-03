@@ -32,7 +32,7 @@ import (
 	"sync"
 
 	"github.com/miekg/dns"
-	"github.com/monoidic/cidranger"
+	"github.com/monoidic/cidranger/v2"
 )
 
 const (
@@ -41,7 +41,7 @@ const (
 )
 
 // processRemoteZone is calling zoneTransfer() for AXFR and processRecords() for handling each valid RR.
-func processRemoteZone(zone, server string, doCIDR bool, ranger cidranger.Ranger, hosts chan<- HostEntry) {
+func processRemoteZone(zone, server string, doCIDR bool, ranger cidranger.Ranger[struct{}], hosts chan<- HostEntry) {
 	if *verbose {
 		fmt.Fprintf(os.Stderr, "Info: doing AXFR for zone %q / server %q\n", zone, server)
 	}
@@ -51,7 +51,7 @@ func processRemoteZone(zone, server string, doCIDR bool, ranger cidranger.Ranger
 }
 
 // processLocalZone is calling zoneParser() for local zone parse and processRecords() for handling valid RR.
-func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger, hosts chan<- HostEntry) {
+func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}], hosts chan<- HostEntry) {
 	var domain string
 
 	if strings.Contains(zone, fileZoneSeparator) {
@@ -85,7 +85,7 @@ func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger, hosts c
 }
 
 // processRecords is processing each RR and calling processHost() for each valid RR.
-func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger, hosts chan<- HostEntry,
+func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}], hosts chan<- HostEntry,
 	zoneRecords []dns.RR,
 ) {
 	var wg sync.WaitGroup

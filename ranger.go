@@ -26,20 +26,20 @@ import (
 	"net/netip"
 	"os"
 
-	"github.com/monoidic/cidranger"
+	"github.com/monoidic/cidranger/v2"
 )
 
 // rangerInit initializes and loads CIDR Ranger and sets doCIDR flag to true if list of networks is non-empty.
-func rangerInit(cidrList []string) (cidranger.Ranger, bool) {
+func rangerInit(cidrList []string) (cidranger.Ranger[struct{}], bool) {
 	var (
-		ranger cidranger.Ranger
+		ranger cidranger.Ranger[struct{}]
 		doCIDR bool
 	)
 
 	// prepare CIDR matching
 	if len(cidrList) > 0 {
 		doCIDR = true
-		ranger = cidranger.NewPCTrieRanger()
+		ranger = cidranger.NewPCTrieRanger[struct{}]()
 
 		// parse and insert individual networks
 		for _, s := range cidrList {
@@ -50,7 +50,7 @@ func rangerInit(cidrList []string) (cidranger.Ranger, bool) {
 				continue
 			}
 
-			_ = ranger.Insert(cidranger.NewBasicRangerEntry(n))
+			_ = ranger.Insert(n, struct{}{})
 		}
 	}
 

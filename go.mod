@@ -1,14 +1,14 @@
 module github.com/dkorunic/axfr2hosts
 
-go 1.23
+go 1.23.6
 
-toolchain go1.23.0
+toolchain go1.24.0
 
 require (
-	github.com/KimMachineGun/automemlimit v0.7.0
-	github.com/avast/retry-go/v4 v4.6.0
+	github.com/KimMachineGun/automemlimit v0.7.1
+	github.com/avast/retry-go/v4 v4.6.1
 	github.com/miekg/dns v1.1.63
-	github.com/monoidic/cidranger v1.0.4
+	github.com/monoidic/cidranger/v2 v2.0.1
 	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/sync v0.11.0
 )
