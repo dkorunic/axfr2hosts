@@ -30,7 +30,6 @@ import (
 	"sync"
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
-	_ "github.com/KimMachineGun/automemlimit/memlimit"
 	"go.uber.org/automaxprocs/maxprocs"
 )
 
