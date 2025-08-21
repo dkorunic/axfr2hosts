@@ -110,11 +110,8 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 	for _, rr := range zoneRecords {
 		switch t := rr.(type) {
 		case *dns.A:
-			wg.Add(1)
 
-			go func() {
-				defer wg.Done()
-
+			wg.Go(func() {
 				// ignore wildcards if ignoreStar is used
 				if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
 					return
@@ -133,13 +130,10 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 				}
 
 				processHost(t.Hdr.Name, zone, ipAddr, hosts)
-			}()
+			})
 		case *dns.AAAA:
-			wg.Add(1)
 
-			go func() {
-				defer wg.Done()
-
+			wg.Go(func() {
 				// ignore wildcards if ignoreStar is used
 				if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
 					return
@@ -158,13 +152,10 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 				}
 
 				processHost(t.Hdr.Name, zone, ipAddr6, hosts)
-			}()
+			})
 		case *dns.CNAME:
-			wg.Add(1)
 
-			go func() {
-				defer wg.Done()
-
+			wg.Go(func() {
 				ctx := context.Background()
 
 				// ignore out-of-zone targets if not using greedyCNAME
@@ -200,7 +191,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 
 					processHost(t.Hdr.Name, zone, ipAddr, hosts)
 				}
-			}()
+			})
 		// every other RR type is skipped over
 		default:
 		}

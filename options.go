@@ -81,8 +81,8 @@ func parseFlags() ([]string, string, []string) {
 
 	for _, arg := range flag.Args() {
 		// nameserver starts with '@'
-		if strings.HasPrefix(arg, dnsPrefix) {
-			server = strings.TrimPrefix(arg, dnsPrefix)
+		if after, ok := strings.CutPrefix(arg, dnsPrefix); ok {
+			server = after
 
 			// make sure server is in server:port format
 			if !strings.Contains(server, portSeparator) {

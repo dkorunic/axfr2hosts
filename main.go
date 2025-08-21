@@ -97,14 +97,10 @@ func main() {
 
 	var wgMon, wgWrk sync.WaitGroup
 
-	wgMon.Add(1)
-
 	// host map/key slice managing monitor routine
-	go func() {
-		defer wgMon.Done()
-
+	wgMon.Go(func() {
 		writeHostEntries(hostChan, &keys, entries)
-	}()
+	})
 
 	// limit total AXFRs in progress
 	semAXFR := make(chan struct{}, *maxTransfers)
@@ -113,13 +109,10 @@ func main() {
 	for _, zone := range zones {
 		if server == "" {
 			// there is no remote server, so assume zones are local Bind9 files
-			wgWrk.Add(1)
 
-			go func() {
-				defer wgWrk.Done()
-
+			wgWrk.Go(func() {
 				processLocalZone(zone, doCIDR, ranger, hostChan)
-			}()
+			})
 		} else {
 			// otherwise assume remote AXFR-able zones
 			wgWrk.Add(1)
