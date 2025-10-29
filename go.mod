@@ -3,7 +3,7 @@ module github.com/dkorunic/axfr2hosts
 go 1.25
 
 require (
-	github.com/KimMachineGun/automemlimit v0.7.4
+	github.com/KimMachineGun/automemlimit v0.7.5
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/miekg/dns v1.1.68
 	github.com/monoidic/cidranger/v2 v2.0.1
