@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/avast/retry-go/v4"
+	"github.com/avast/retry-go/v5"
 	"github.com/miekg/dns"
 )
 
@@ -62,7 +62,10 @@ func zoneTransfer(zone, server string) []dns.RR {
 	var c chan *dns.Envelope
 
 	// execute AXFR with automatic retrying
-	err := retry.Do(
+	err := retry.New(
+		retry.Attempts(*maxRetries),
+		retry.Context(ctx),
+	).Do(
 		func() error {
 			var err error
 
@@ -73,8 +76,6 @@ func zoneTransfer(zone, server string) []dns.RR {
 
 			return nil
 		},
-		retry.Attempts(*maxRetries),
-		retry.Context(ctx),
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: AXFR failure for zone %q / server %q, will skip over: %v\n", zone, server, err)
