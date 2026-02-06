@@ -25,7 +25,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v5"
@@ -42,10 +41,7 @@ const (
 func zoneTransfer(zone, server string) []dns.RR {
 	ctx := context.Background()
 
-	// make sure zone always ends with dot
-	if !strings.HasSuffix(zone, endingDot) {
-		zone = strings.Join([]string{zone, endingDot}, "")
-	}
+	zone = dns.Fqdn(zone)
 
 	// prepare AXFR
 	tr := new(dns.Transfer)

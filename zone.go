@@ -58,13 +58,8 @@ func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}
 		t := strings.Split(zone, fileZoneSeparator)
 
 		if len(t) == 2 {
-			zone = t[0]   // filename
-			domain = t[1] // domain
-
-			// make sure domain always ends with dot
-			if !strings.HasSuffix(domain, endingDot) {
-				domain = strings.Join([]string{domain, endingDot}, "")
-			}
+			zone = t[0]             // filename
+			domain = dns.Fqdn(t[1]) // domain
 		} else {
 			fmt.Fprintf(os.Stderr, "Error: invalid file=domain option format: %q\n", zone)
 			flag.Usage()
