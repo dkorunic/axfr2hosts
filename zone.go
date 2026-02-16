@@ -40,7 +40,7 @@ const (
 	fileZoneSeparator = "="
 )
 
-// processRemoteZone is calling zoneTransfer() for AXFR and processRecords() for handling each valid RR.
+// processRemoteZone calls zoneTransfer() for AXFR and processRecords() for handling each valid RR.
 func processRemoteZone(zone, server string, doCIDR bool, ranger cidranger.Ranger[struct{}], hosts chan<- HostEntry) {
 	if *verbose {
 		fmt.Fprintf(os.Stderr, "Info: doing AXFR for zone %q / server %q\n", zone, server)
@@ -50,7 +50,7 @@ func processRemoteZone(zone, server string, doCIDR bool, ranger cidranger.Ranger
 	processRecords(zone, doCIDR, ranger, hosts, zoneRecords)
 }
 
-// processLocalZone is calling zoneParser() for local zone parse and processRecords() for handling valid RR.
+// processLocalZone calls zoneParser() for local zone parse and processRecords() for handling valid RR.
 func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}], hosts chan<- HostEntry) {
 	var domain string
 
@@ -79,7 +79,7 @@ func processLocalZone(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}
 	processRecords(zone, doCIDR, ranger, hosts, zoneRecords)
 }
 
-// processRecords is processing each RR and calling processHost() for each valid RR.
+// processRecords processes each RR and calls processHost() for each valid RR.
 func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}], hosts chan<- HostEntry,
 	zoneRecords []dns.RR,
 ) {
@@ -105,7 +105,6 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 	for _, rr := range zoneRecords {
 		switch t := rr.(type) {
 		case *dns.A:
-
 			wg.Go(func() {
 				// ignore wildcards if ignoreStar is used
 				if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
@@ -127,7 +126,6 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 				processHost(t.Hdr.Name, zone, ipAddr, hosts)
 			})
 		case *dns.AAAA:
-
 			wg.Go(func() {
 				// ignore wildcards if ignoreStar is used
 				if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
@@ -149,7 +147,6 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 				processHost(t.Hdr.Name, zone, ipAddr6, hosts)
 			})
 		case *dns.CNAME:
-
 			wg.Go(func() {
 				ctx := context.Background()
 
@@ -195,7 +192,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 	wg.Wait()
 }
 
-// zoneParser is parsing loading zones into memory and parsing them, returning slice of RRs.
+// zoneParser loads zones into memory and parses them, returning a slice of RRs.
 func zoneParser(zone, domain string) []dns.RR {
 	var records []dns.RR
 

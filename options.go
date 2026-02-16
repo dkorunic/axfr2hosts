@@ -57,6 +57,8 @@ var (
 	resolverTimeout = flag.Duration("resolver_timeout", defaultResolverTimeout, "DNS queries timeout (should be 2-10s)")
 )
 
+// parseFlags parses the command line flags and arguments, returning a slice of zones, the server address,
+// and a slice of CIDR blocks.
 func parseFlags() ([]string, string, []string) {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %v [options] zone [zone2 [zone3 ...]] [@server[:port]]\n", os.Args[0])

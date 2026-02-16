@@ -40,6 +40,7 @@ const (
 	maxMemRatio  = 0.9
 )
 
+// main is the entry point of the application.
 func main() {
 	_, _ = memlimit.SetGoMemLimitWithOpts(
 		memlimit.WithRatio(maxMemRatio),
@@ -109,7 +110,6 @@ func main() {
 	for _, zone := range zones {
 		if server == "" {
 			// there is no remote server, so assume zones are local Bind9 files
-
 			wgWrk.Go(func() {
 				processLocalZone(zone, doCIDR, ranger, hostChan)
 			})

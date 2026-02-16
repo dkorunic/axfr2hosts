@@ -35,8 +35,8 @@ type HostEntry struct {
 // HostMap contains map of addresses and labels.
 type HostMap map[netip.Addr]map[string]struct{}
 
-// processHost cleans FQDN and optionally shortens it, calling low-level writeHostEntries and returning updated hosts
-// map and keys slice.
+// processHost cleans FQDN and optionally shortens it, sending the resulting HostEntry
+// to the hosts channel.
 func processHost(label, zone string, ipAddr netip.Addr, hosts chan<- HostEntry) {
 	label = strings.TrimSuffix(label, endingDot)
 	label = strings.ToLower(label)
@@ -56,7 +56,8 @@ func processHost(label, zone string, ipAddr netip.Addr, hosts chan<- HostEntry) 
 	hosts <- HostEntry{label: label, ipAddr: ipAddr}
 }
 
-// writeHostEntries updates hosts map with a new label-IP pair, returning updated hosts map and keys slice.
+// writeHostEntries consumes HostEntry items from the hosts channel and updates
+// the provided hosts map and keys slice with new label-IP pairs.
 func writeHostEntries(hosts <-chan HostEntry, keys *[]netip.Addr, entries HostMap) {
 	for x := range hosts {
 		label, ipAddr := x.label, x.ipAddr

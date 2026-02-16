@@ -23,6 +23,7 @@
 
 package main
 
+// setNofile is a no-op on non-Unix systems.
 func setNofile() error {
 	return nil
 }

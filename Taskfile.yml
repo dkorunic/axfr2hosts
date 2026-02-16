@@ -59,6 +59,10 @@ tasks:
       - task: fmt
       - golangci-lint run --timeout 5m
 
+  test:
+    cmds:
+      - go test ./...
+
   release:
     cmds:
       - goreleaser release --clean -p 4
