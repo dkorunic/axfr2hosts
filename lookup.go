@@ -26,7 +26,6 @@ import (
 	"errors"
 	"net"
 	"strconv"
-	"strings"
 
 	"github.com/miekg/dns"
 	"golang.org/x/sync/singleflight"
@@ -65,7 +64,7 @@ func lookupFunc(ctx context.Context, s string, t uint16, r *net.Resolver) func()
 //
 // It returns a slice of strings and an error.
 func lookup(ctx context.Context, s string, t uint16, r *net.Resolver) ([]string, error) {
-	key := strings.Join([]string{strconv.FormatUint(uint64(t), 10), s}, "")
+	key := strconv.Itoa(int(t)) + s
 	ch := lookupGroup.DoChan(key, lookupFunc(ctx, s, t, r))
 
 	var err error

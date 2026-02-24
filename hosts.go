@@ -43,7 +43,7 @@ func processHost(label, zone string, ipAddr netip.Addr, hosts chan<- HostEntry) 
 
 	// strip domain if needed
 	if *stripDomain || *stripUnstrip {
-		labelStripped := strings.TrimSuffix(label, strings.Join([]string{endingDot, zone}, ""))
+		labelStripped := strings.TrimSuffix(label, endingDot+zone)
 		if labelStripped != "" {
 			hosts <- HostEntry{label: labelStripped, ipAddr: ipAddr}
 

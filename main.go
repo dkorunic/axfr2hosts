@@ -36,7 +36,7 @@ import (
 const (
 	mapSize      = 4096
 	subMapSize   = 8
-	hostChanSize = 64
+	hostChanSize = 2048
 	maxMemRatio  = 0.9
 )
 
