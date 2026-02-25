@@ -8,28 +8,26 @@
 
 ## About
 
-axfr2hosts is a tool meant to do a [DNS zone transfer](https://en.wikipedia.org/wiki/DNS_zone_transfer) in a form of AXFR transaction of one or more zones towards a single DNS server and convert received A, AAAA and CNAME records from a DNS responses into a [hosts file](<https://en.wikipedia.org/wiki/Hosts_(file)>) for a local use, for instance when DNS servers are [unreachable](https://blog.cloudflare.com/october-2021-facebook-outage/) and/or down.
+axfr2hosts performs a [DNS zone transfer](https://en.wikipedia.org/wiki/DNS_zone_transfer) (AXFR) against one or more zones on a single DNS server and converts the received A, AAAA, and CNAME records into a [hosts file](<https://en.wikipedia.org/wiki/Hosts_(file)>) for local use — for example, when DNS servers are [unreachable](https://blog.cloudflare.com/october-2021-facebook-outage/) or down.
 
-By default hosts entries will be sorted its IP as a key and under each entry individual FQDNs will be sorted alphabetically.
+Output entries are sorted by IP address. For each IP address, all associated hostnames are listed in alphabetical order.
 
-If needed, axfr2hosts can also read and parse local RFC 1035 zones (for instance BIND 9 zone files) and process A and CNAME records into a hosts file as described above so that a zone transfer is not needed.
+axfr2hosts can also read and parse local RFC 1035 zone files (such as BIND 9 zone files) and process A and CNAME records into a hosts file without requiring a zone transfer.
 
 ## Requirements
 
-Either of:
+One of the following:
 
-- Ability to do a full zone transfer (AXFR), usually permitted with `allow-transfer` in [BIND 9](https://www.isc.org/bind/) or with `allow-axfr-ips` in [PowerDNS](https://www.powerdns.com/),
-- Permissions to read RFC 1035 zone files locally.
+- Permission to perform a full zone transfer (AXFR), typically granted via `allow-transfer` in [BIND 9](https://www.isc.org/bind/) or `allow-axfr-ips` in [PowerDNS](https://www.powerdns.com/),
+- Read access to RFC 1035 zone files on the local filesystem.
 
 ## Installation
 
-There are two ways of installing axfr2hosts:
-
 ### Manual
 
-Download your preferred flavor from [the releases](https://github.com/dkorunic/axfr2hosts/releases) page and install manually, typically to `/usr/local/bin/axfr2hosts`.
+Download your preferred release from the [releases page](https://github.com/dkorunic/axfr2hosts/releases) and install it manually, typically to `/usr/local/bin/axfr2hosts`.
 
-### Using go get
+### Using go install
 
 ```shell
 go install github.com/dkorunic/axfr2hosts@latest
@@ -69,9 +67,9 @@ Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] [@server[:port]]
 For more information visit project home: https://github.com/dkorunic/axfr2hosts
 ```
 
-At minimum, a single zone and a single server are needed for any meaningful action.
+At minimum, a single zone and a single server are required for any meaningful action.
 
-Typical use case would be:
+A typical invocation looks like:
 
 ```shell
 axfr2hosts dkorunic.net pkorunic.net @172.64.33.146
@@ -79,33 +77,33 @@ axfr2hosts dkorunic.net pkorunic.net @172.64.33.146
 
 ### CNAME handling
 
-However the tool by default follows CNAMEs even if they are out-of-zone and resolves to one or more IP addresses if possible and lists all of them. That behaviour can be changed with `-greedy_cname=false` flag.
+By default, the tool follows CNAME records even when they point to targets outside the transferred zone and resolves them to one or more IP addresses. This behavior can be disabled with `-greedy_cname=false`, which restricts CNAME resolution to in-zone targets only.
 
 ### Wildcard handling
 
-Also, by default tool lists wildcard (DNS labels containing `*`) like they are ordinary labels and that can be changed with `-ignore_star=true` flag, which simply skips over those records.
+By default, the tool ignores wildcard records (DNS labels containing `*`). To include wildcard records and treat them as ordinary labels, use `-ignore_star=false`.
 
 ### Filter results by CIDR
 
-Finally if there is a need to list only a subset of records matching one or more CIDR ranges, `-cidr_list` flag can be used.
+To include only records whose IP addresses fall within specific subnets, use the `-cidr_list` flag with a comma-separated list of CIDR ranges.
 
-### Many zones transfer
+### Transferring many zones
 
-If there is a lot of zones that need to be fetched at once, tool works well with `xargs`. Individual zone errors will be displayed and such zones will be skipped over:
+When transferring a large number of zones at once, the tool works well with `xargs`. Zones that fail to transfer are skipped, and their errors are printed to stderr:
 
 ```shell
 xargs axfr2hosts @nameserver < list
 ```
 
-Maximum of concurrent zone transfers is limited by `-max_transfers` flag and defaults to `10`, aligned with BIND 9 default (`transfers-out` in BIND 9 `named.conf`).
+The maximum number of concurrent zone transfers is controlled by `-max_transfers`, which defaults to `10` — matching BIND 9's default `transfers-out` setting in `named.conf`.
 
 ### Strip domain name
 
-It is also possible to output hosts file with domain names stripped by using `-strip_domain=true` flag. It is also possible to keep both domain-stripped labels and FQDNs at the same time by using `-strip_unstrip=true` flag. When using many domains at once, either of these options do not make much sense.
+Use `-strip_domain` to emit hosts file entries with the domain portion stripped, leaving only the short hostname label. Use `-strip_unstrip` to include both the full FQDN and the stripped short name for each entry. Note that either option produces less meaningful results when processing multiple domains simultaneously.
 
 ### Process local zone files
 
-It is also possible to directly process RFC 1035 zone files on a local filesystem when a nameserver is not been specified. We would typically recommend specifying a domain name manually by suffixing the zone file with `=` and domain name as shown below, as one inferred from a zone can possibly be invalid (due to lack of top-level `$ORIGIN` and/or all records being non-FQDN and/or being suffixed with `@` macro):
+To process RFC 1035 zone files on the local filesystem, omit the `@server` argument. It is recommended to supply the domain name explicitly by appending `=domain` to the zone file path, because the domain inferred from the zone file itself may be incorrect (for instance, when the file lacks a top-level `$ORIGIN` directive, all records are non-FQDN, or records use the `@` macro):
 
 ```shell
 axfr2hosts dkorunic.net.zone=dkorunic.net
@@ -113,7 +111,7 @@ axfr2hosts dkorunic.net.zone=dkorunic.net
 
 ### DNS error code responses
 
-In case you are wondering what `dns: bad xfr rcode: 9` means, here is a list of DNS response codes:
+If you encounter an error such as `dns: bad xfr rcode: 9`, the following table maps DNS response codes to their meanings:
 
 | Response Code | Return Message | Explanation          |
 | :------------ | :------------- | :------------------- |
