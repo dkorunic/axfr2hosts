@@ -22,8 +22,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net/netip"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -39,8 +41,11 @@ func displayHostEntries(keysAddr []netip.Addr, results HostMap) {
 
 	keysHost := make([]string, 0, subMapSize)
 
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
+
 	t := time.Now().Format(time.RFC1123)
-	fmt.Printf("# axfr2hosts generated list at %v\n", t)
+	fmt.Fprintf(w, "# axfr2hosts generated list at %v\n", t)
 
 	// sorting by IP
 	sort.Slice(keysAddr, func(i, j int) bool {
@@ -80,6 +85,6 @@ func displayHostEntries(keysAddr []netip.Addr, results HostMap) {
 
 		sb.WriteString("\n")
 
-		fmt.Print(sb.String())
+		_, _ = w.WriteString(sb.String())
 	}
 }

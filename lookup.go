@@ -64,7 +64,8 @@ func lookupFunc(ctx context.Context, s string, t uint16, r *net.Resolver) func()
 //
 // It returns a slice of strings and an error.
 func lookup(ctx context.Context, s string, t uint16, r *net.Resolver) ([]string, error) {
-	key := strconv.Itoa(int(t)) + s
+	b := strconv.AppendUint(make([]byte, 0, len(s)+5), uint64(t), 10)
+	key := string(append(b, s...))
 	ch := lookupGroup.DoChan(key, lookupFunc(ctx, s, t, r))
 
 	var err error

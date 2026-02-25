@@ -53,7 +53,7 @@ func zoneTransfer(zone, server string) []dns.RR {
 	tr.ReadTimeout = readTimeout
 	tr.WriteTimeout = writeTimeout
 
-	var records []dns.RR
+	records := make([]dns.RR, 0, 1024)
 
 	var c chan *dns.Envelope
 

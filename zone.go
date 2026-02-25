@@ -22,6 +22,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -205,7 +206,7 @@ func zoneParser(zone, domain string) []dns.RR {
 	}
 
 	// initialize RFC 1035 zone parser
-	zp := dns.NewZoneParser(strings.NewReader(string(z)), domain, "")
+	zp := dns.NewZoneParser(bytes.NewReader(z), domain, "")
 
 	// fetch all RRs
 	for rr, ok := zp.Next(); ok; rr, ok = zp.Next() {
