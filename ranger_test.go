@@ -32,9 +32,24 @@ func TestRangerInit(t *testing.T) {
 			checkResults: []bool{true, true, false, true, false},
 		},
 		{
-			name:       "Invalid CIDR",
+			name:       "Invalid CIDR only",
 			cidrList:   []string{"invalid"},
-			wantDoCIDR: true, // It still returns true because list is not empty, but ranger might be empty or partial
+			wantDoCIDR: true,
+			checkIPs: []netip.Addr{
+				netip.MustParseAddr("192.0.2.1"),
+			},
+			checkResults: []bool{false}, // ranger has no valid entries
+		},
+		{
+			name:       "Mixed valid and invalid CIDRs",
+			cidrList:   []string{"192.0.2.0/24", "not-a-cidr", "2001:db8::/32"},
+			wantDoCIDR: true,
+			checkIPs: []netip.Addr{
+				netip.MustParseAddr("192.0.2.1"),
+				netip.MustParseAddr("2001:db8::1"),
+				netip.MustParseAddr("10.0.0.1"),
+			},
+			checkResults: []bool{true, true, false},
 		},
 	}
 
@@ -44,6 +59,10 @@ func TestRangerInit(t *testing.T) {
 
 			if doCIDR != tt.wantDoCIDR {
 				t.Errorf("rangerInit() doCIDR = %v, want %v", doCIDR, tt.wantDoCIDR)
+			}
+
+			if !doCIDR && ranger != nil {
+				t.Errorf("rangerInit() ranger should be nil when cidrList is empty")
 			}
 
 			if ranger != nil && len(tt.checkIPs) > 0 {

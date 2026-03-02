@@ -63,6 +63,36 @@ func TestProcessHost(t *testing.T) {
 				{label: "host.other.com", ipAddr: netip.MustParseAddr("192.0.2.1")},
 			},
 		},
+		{
+			name:   "Uppercase normalization",
+			label:  "HOST.EXAMPLE.COM.",
+			zone:   "example.com",
+			ipAddr: netip.MustParseAddr("192.0.2.1"),
+			expected: []HostEntry{
+				{label: "host.example.com", ipAddr: netip.MustParseAddr("192.0.2.1")},
+			},
+		},
+		{
+			name:        "Multi-level subdomain strip",
+			label:       "sub.host.example.com.",
+			zone:        "example.com",
+			ipAddr:      netip.MustParseAddr("192.0.2.1"),
+			stripDomain: true,
+			expected: []HostEntry{
+				{label: "sub.host", ipAddr: netip.MustParseAddr("192.0.2.1")},
+			},
+		},
+		{
+			name:         "Strip and Unstrip multi-level",
+			label:        "sub.host.example.com.",
+			zone:         "example.com",
+			ipAddr:       netip.MustParseAddr("192.0.2.1"),
+			stripUnstrip: true,
+			expected: []HostEntry{
+				{label: "sub.host", ipAddr: netip.MustParseAddr("192.0.2.1")},
+				{label: "sub.host.example.com", ipAddr: netip.MustParseAddr("192.0.2.1")},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -124,5 +154,46 @@ func TestWriteHostEntries(t *testing.T) {
 	}
 	if _, ok := entries[ip2]["host3"]; !ok {
 		t.Errorf("writeHostEntries() missing host3 for ip2")
+	}
+}
+
+func TestWriteHostEntriesEmptyChannel(t *testing.T) {
+	hosts := make(chan HostEntry)
+	close(hosts)
+
+	keys := []netip.Addr{}
+	entries := make(HostMap)
+
+	writeHostEntries(hosts, &keys, entries)
+
+	if len(keys) != 0 {
+		t.Errorf("writeHostEntries() keys length = %d, want 0", len(keys))
+	}
+
+	if len(entries) != 0 {
+		t.Errorf("writeHostEntries() entries length = %d, want 0", len(entries))
+	}
+}
+
+func TestWriteHostEntriesDuplicateLabel(t *testing.T) {
+	hosts := make(chan HostEntry, 3)
+	ip1 := netip.MustParseAddr("192.0.2.1")
+
+	hosts <- HostEntry{label: "host1", ipAddr: ip1}
+	hosts <- HostEntry{label: "host2", ipAddr: ip1}
+	hosts <- HostEntry{label: "host1", ipAddr: ip1} // duplicate label same IP
+	close(hosts)
+
+	keys := []netip.Addr{}
+	entries := make(HostMap)
+
+	writeHostEntries(hosts, &keys, entries)
+
+	if len(keys) != 1 {
+		t.Errorf("writeHostEntries() keys length = %d, want 1", len(keys))
+	}
+
+	if len(entries[ip1]) != 2 {
+		t.Errorf("writeHostEntries() unique labels for ip1 = %d, want 2", len(entries[ip1]))
 	}
 }

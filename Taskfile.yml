@@ -63,6 +63,33 @@ tasks:
     cmds:
       - go test ./...
 
+  tools:
+    cmds:
+      - task: gofumpt
+      - task: gci
+      - task: betteralign
+
   release:
     cmds:
       - goreleaser release --clean -p 4
+
+  gci:
+    internal: true
+    status:
+      - which gci
+    cmds:
+      - go install github.com/daixiang0/gci@latest
+
+  gofumpt:
+    internal: true
+    status:
+      - which gofumpt
+    cmds:
+      - go install mvdan.cc/gofumpt@latest
+
+  betteralign:
+    internal: true
+    status:
+      - which betteralign
+    cmds:
+      - go install github.com/dkorunic/betteralign/cmd/betteralign@latest
