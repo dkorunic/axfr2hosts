@@ -93,6 +93,27 @@ func TestProcessHost(t *testing.T) {
 				{label: "sub.host.example.com", ipAddr: netip.MustParseAddr("192.0.2.1")},
 			},
 		},
+		{
+			name:        "Zone apex label cannot be shortened",
+			label:       "example.com.",
+			zone:        "example.com",
+			ipAddr:      netip.MustParseAddr("192.0.2.1"),
+			stripDomain: true,
+			expected: []HostEntry{
+				// "example.com" does not end with ".example.com", so TrimSuffix
+				// is a no-op and the full label is emitted.
+				{label: "example.com", ipAddr: netip.MustParseAddr("192.0.2.1")},
+			},
+		},
+		{
+			name:   "Label without trailing dot is normalised",
+			label:  "host.example.com",
+			zone:   "example.com",
+			ipAddr: netip.MustParseAddr("192.0.2.1"),
+			expected: []HostEntry{
+				{label: "host.example.com", ipAddr: netip.MustParseAddr("192.0.2.1")},
+			},
+		},
 	}
 
 	for _, tt := range tests {

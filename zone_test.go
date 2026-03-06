@@ -4,7 +4,9 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/miekg/dns"
 )
@@ -336,5 +338,236 @@ func TestProcessLocalZoneNoSeparator(t *testing.T) {
 
 	if len(results) != 0 {
 		t.Errorf("processLocalZone() empty zone = %d entries, want 0", len(results))
+	}
+}
+
+func TestZoneParserOrigin(t *testing.T) {
+	// Zone file that carries its own $ORIGIN; domain parameter is empty.
+	zoneContent := `$ORIGIN example.com.
+$TTL 3600
+@ IN SOA ns1.example.com. admin.example.com. 2021010101 3600 900 604800 300
+@ IN NS ns1.example.com.
+ns1   IN A    192.0.2.1
+host1 IN A    192.0.2.2
+host2 IN AAAA 2001:db8::1
+`
+	tmpFile, err := os.CreateTemp("", "test-zone-origin-*.txt")
+	if err != nil {
+		t.Fatalf("CreateTemp: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(zoneContent); err != nil {
+		t.Fatalf("WriteString: %v", err)
+	}
+	tmpFile.Close()
+
+	// Pass empty domain — origin must come from $ORIGIN in the file.
+	records := zoneParser(tmpFile.Name(), "")
+
+	var aCount, aaaaCount int
+	for _, rr := range records {
+		switch rr.(type) {
+		case *dns.A:
+			aCount++
+		case *dns.AAAA:
+			aaaaCount++
+		}
+	}
+
+	if aCount != 2 {
+		t.Errorf("zoneParser() with $ORIGIN: A records = %d, want 2", aCount)
+	}
+	if aaaaCount != 1 {
+		t.Errorf("zoneParser() with $ORIGIN: AAAA records = %d, want 1", aaaaCount)
+	}
+}
+
+func TestZoneParserMalformedLine(t *testing.T) {
+	// A malformed RDATA value should cause a parse error; the parser must not
+	// panic and must return whatever records it parsed successfully before the
+	// error.
+	zoneContent := `$TTL 3600
+@ IN SOA ns1 admin 2021010101 3600 900 604800 300
+@ IN NS ns1
+ns1 IN A 192.0.2.1
+badrecord IN A NOT_AN_IP_ADDRESS
+host1 IN A 192.0.2.2
+`
+	tmpFile, err := os.CreateTemp("", "test-zone-malformed-*.txt")
+	if err != nil {
+		t.Fatalf("CreateTemp: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(zoneContent); err != nil {
+		t.Fatalf("WriteString: %v", err)
+	}
+	tmpFile.Close()
+
+	// Must not panic; must return at least the records parsed before the error.
+	records := zoneParser(tmpFile.Name(), "example.com.")
+	if len(records) == 0 {
+		t.Error("zoneParser() with malformed line: expected at least some valid records before the error")
+	}
+}
+
+func TestProcessRecordsEmpty(t *testing.T) {
+	hosts := make(chan HostEntry, 5)
+
+	processRecords("example.com", false, nil, hosts, []dns.RR{})
+	close(hosts)
+
+	var results []HostEntry
+	for h := range hosts {
+		results = append(results, h)
+	}
+
+	if len(results) != 0 {
+		t.Errorf("processRecords() empty records = %d entries, want 0", len(results))
+	}
+}
+
+func TestProcessRecordsCNAMEGreedy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping DNS-dependent CNAME test in short mode")
+	}
+
+	origGreedy := *greedyCNAME
+	origTimeout := *resolverTimeout
+	defer func() {
+		*greedyCNAME = origGreedy
+		*resolverTimeout = origTimeout
+	}()
+	*greedyCNAME = true
+	*resolverTimeout = 500 * time.Millisecond
+
+	hosts := make(chan HostEntry, 10)
+	rrs := []dns.RR{
+		&dns.CNAME{
+			Hdr:    dns.RR_Header{Name: "alias.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 3600},
+			Target: "canonical.example.com.",
+		},
+	}
+
+	// DNS lookup for reserved example.com hostnames will fail (NXDOMAIN).
+	// The test verifies the code path runs without panicking.
+	processRecords("example.com", false, nil, hosts, rrs)
+	close(hosts)
+
+	for range hosts {
+		// drain channel
+	}
+}
+
+func TestProcessRecordsCNAMENonGreedy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping DNS-dependent CNAME test in short mode")
+	}
+
+	origGreedy := *greedyCNAME
+	origTimeout := *resolverTimeout
+	defer func() {
+		*greedyCNAME = origGreedy
+		*resolverTimeout = origTimeout
+	}()
+	*greedyCNAME = false
+	*resolverTimeout = 500 * time.Millisecond
+
+	hosts := make(chan HostEntry, 10)
+	rrs := []dns.RR{
+		&dns.CNAME{
+			Hdr:    dns.RR_Header{Name: "alias.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 3600},
+			Target: "canonical.example.com.",
+		},
+		&dns.CNAME{
+			Hdr:    dns.RR_Header{Name: "external.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 3600},
+			Target: "target.other.com.",
+		},
+	}
+
+	// With greedyCNAME=false the code calls lookup(TypeCNAME) first.
+	// DNS will fail for these hostnames; the goroutines return early.
+	// No panic, no entries expected from a failing DNS.
+	processRecords("example.com", false, nil, hosts, rrs)
+	close(hosts)
+
+	for range hosts {
+		// drain channel
+	}
+}
+
+func TestProcessLocalZoneMissingFileDomain(t *testing.T) {
+	hosts := make(chan HostEntry, 5)
+
+	// file=domain format where the file does not exist; should not panic
+	// and return 0 entries (zoneParser fails silently when domain is set).
+	processLocalZone("/nonexistent/axfr2hosts-test-missing.txt=example.com", false, nil, hosts)
+	close(hosts)
+
+	var results []HostEntry
+	for h := range hosts {
+		results = append(results, h)
+	}
+
+	if len(results) != 0 {
+		t.Errorf("processLocalZone() missing file = %d entries, want 0", len(results))
+	}
+}
+
+// TestCNAMEZoneSuffix validates the zone membership check used for CNAME filtering
+// when greedyCNAME=false. net.LookupCNAME always returns FQDNs with a trailing dot
+// (e.g. "target.example.com."), while the zone variable has its trailing dot stripped
+// by parseFlags. The fix normalises the zone with dns.Fqdn() before the HasSuffix
+// comparison so that in-zone CNAMEs are correctly identified.
+func TestCNAMEZoneSuffix(t *testing.T) {
+	tests := []struct {
+		name      string
+		canonical string // as returned by net.LookupCNAME (always has trailing dot)
+		zone      string // as stored after parseFlags strips the trailing dot
+		inZone    bool
+	}{
+		{
+			name:      "in-zone CNAME",
+			canonical: "target.example.com.",
+			zone:      "example.com",
+			inZone:    true,
+		},
+		{
+			name:      "out-of-zone CNAME",
+			canonical: "target.other.com.",
+			zone:      "example.com",
+			inZone:    false,
+		},
+		{
+			name:      "zone apex CNAME",
+			canonical: "example.com.",
+			zone:      "example.com",
+			inZone:    true,
+		},
+		{
+			name:      "subdomain in-zone CNAME",
+			canonical: "deep.sub.example.com.",
+			zone:      "example.com",
+			inZone:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Regression: without dns.Fqdn the suffix never matched because
+			// "target.example.com." does not end with "example.com" (no trailing dot).
+			withoutFqdn := strings.HasSuffix(tt.canonical, tt.zone)
+			if tt.inZone && withoutFqdn {
+				t.Logf("note: bare zone suffix matched for %q — likely a zone with no dot-separated prefix", tt.canonical)
+			}
+
+			// Fix: dns.Fqdn(zone) adds the trailing dot, matching LookupCNAME output.
+			withFqdn := strings.HasSuffix(tt.canonical, dns.Fqdn(tt.zone))
+			if withFqdn != tt.inZone {
+				t.Errorf("HasSuffix(%q, dns.Fqdn(%q)) = %v, want %v",
+					tt.canonical, tt.zone, withFqdn, tt.inZone)
+			}
+		})
 	}
 }

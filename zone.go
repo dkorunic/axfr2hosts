@@ -158,7 +158,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 						return
 					}
 
-					if len(cnames) > 0 && !strings.HasSuffix(cnames[0], zone) {
+					if len(cnames) > 0 && !strings.HasSuffix(cnames[0], dns.Fqdn(zone)) {
 						return
 					}
 				}
