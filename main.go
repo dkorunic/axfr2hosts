@@ -40,6 +40,13 @@ const (
 	maxMemRatio  = 0.9
 )
 
+var (
+	GitTag    = ""
+	GitCommit = ""
+	GitDirty  = ""
+	BuildTime = ""
+)
+
 // main is the entry point of the application.
 func main() {
 	_, _ = memlimit.SetGoMemLimitWithOpts(

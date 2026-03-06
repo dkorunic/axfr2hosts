@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -49,6 +50,7 @@ var (
 	stripDomain     = flag.Bool("strip_domain", false, "Strip domain name from FQDN hosts entries")
 	stripUnstrip    = flag.Bool("strip_unstrip", false, "Keep both FQDN names and domain-stripped names")
 	verbose         = flag.Bool("verbose", false, "Enable more verbosity")
+	version         = flag.Bool("version", false, "Show version and exit")
 	maxTransfers    = flag.Uint("max_transfers", maxTransfersDefault, "Maximum parallel zone transfers")
 	maxRetries      = flag.Uint("max_retries", maxRetriesDefault, "Maximum DNS zone transfer attempts")
 	cpuProfile      = flag.String("cpu_profile", "", "CPU profile output file")
@@ -70,6 +72,13 @@ func parseFlags() ([]string, string, []string) {
 	}
 
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("axfr2hosts %v %v%v, built on %v, with %v\n", GitTag, GitCommit, GitDirty,
+			BuildTime, runtime.Version())
+
+		os.Exit(0)
+	}
 
 	var server string
 
