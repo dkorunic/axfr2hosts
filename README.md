@@ -38,29 +38,31 @@ go install github.com/dkorunic/axfr2hosts@latest
 ```shell
 Usage: ./axfr2hosts [options] zone [zone2 [zone3 ...]] [@server[:port]]
   -cidr_list string
-    	Use only targets from CIDR whitelist (comma separated list)
+        Use only targets from CIDR whitelist (comma separated list)
   -cpu_profile string
-    	CPU profile output file
+        CPU profile output file
   -greedy_cname
-    	Resolve out-of-zone CNAME targets (default true)
+        Resolve out-of-zone CNAME targets (default true)
   -ignore_star
-    	Ignore wildcard records (default true)
+        Ignore wildcard records (default true)
   -max_retries uint
-    	Maximum DNS zone transfer attempts (default 3)
+        Maximum DNS zone transfer attempts (default 3)
   -max_transfers uint
-    	Maximum parallel zone transfers (default 10)
+        Maximum parallel zone transfers (default 10)
   -mem_profile string
-    	memory profile output file
+        memory profile output file
   -resolver_address string
-    	DNS resolver (DNS recursor) IP address
+        DNS resolver (DNS recursor) IP address
   -resolver_timeout duration
-    	DNS queries timeout (should be 2-10s) (default 10s)
+        DNS queries timeout (should be 2-10s) (default 10s)
   -strip_domain
-    	Strip domain name from FQDN hosts entries
+        Strip domain name from FQDN hosts entries
   -strip_unstrip
-    	Keep both FQDN names and domain-stripped names
+        Keep both FQDN names and domain-stripped names
   -verbose
-    	Enable more verbosity
+        Enable more verbosity
+  -version
+        Show version and exit
 1) If server was not specified, zones will be parsed as RFC 1035 zone files on a local filesystem,
 2) We also permit zone=domain argument format to infer a domain name for zone files.
 
