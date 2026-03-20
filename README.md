@@ -2,7 +2,6 @@
 
 [![GitHub license](https://img.shields.io/github/license/dkorunic/axfr2hosts)](https://github.com/dkorunic/axfr2hosts/blob/master/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/dkorunic/axfr2hosts)](https://github.com/dkorunic/axfr2hosts/releases/latest)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dkorunic/axfr2hosts)](https://goreportcard.com/report/github.com/dkorunic/axfr2hosts)
 
 ![](gopher.png)
 
