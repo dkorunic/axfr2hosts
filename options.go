@@ -95,8 +95,10 @@ func parseFlags() ([]string, string, []string) {
 		if after, ok := strings.CutPrefix(arg, dnsPrefix); ok {
 			server = after
 
-			// make sure server is in server:port format
-			if !strings.Contains(server, portSeparator) {
+			// make sure server is in host:port format; use SplitHostPort instead of
+			// strings.Contains so that bare IPv6 addresses (which contain ":") are
+			// also wrapped correctly by net.JoinHostPort.
+			if _, _, err := net.SplitHostPort(server); err != nil {
 				server = net.JoinHostPort(server, dnsPort)
 			}
 

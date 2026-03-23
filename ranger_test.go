@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/netip"
+	"strings"
 	"testing"
 )
 
@@ -77,5 +78,20 @@ func TestRangerInit(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestRangerInitAllInvalidPrintsError is the test oracle for bug #12.
+// When every supplied CIDR string is malformed, rangerInit must still print an
+// error message per bad entry so the operator knows filtering is broken.
+// The silent-swallow mutation would drop the error log, leaving the user with
+// an empty ranger (all IPs filtered out) and no indication of why.
+func TestRangerInitAllInvalidPrintsError(t *testing.T) {
+	stderr := captureStderr(func() {
+		rangerInit([]string{"not-a-cidr", "also-bad/999"})
+	})
+
+	if !strings.Contains(stderr, "Error") {
+		t.Errorf("rangerInit() with all-invalid CIDRs did not print an error; stderr=%q", stderr)
 	}
 }

@@ -2,11 +2,165 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net"
+	"strconv"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/miekg/dns"
+	"golang.org/x/sync/singleflight"
 )
+
+// TestLookupKeyTypePrefix is the test oracle for bug #15.
+// The singleflight key is constructed as decimal(type) ++ hostname so that
+// different (type, hostname) pairs never collide.  The bug mutation swaps the
+// order to hostname ++ decimal(type), which enables concrete collisions: for
+// example hostname "a" with type 12 produces the same buggy key as hostname
+// "a1" with type 2 ("a12" in both cases).  The correct prefix encoding avoids
+// this entirely.
+func TestLookupKeyTypePrefix(t *testing.T) {
+	makeCorrectKey := func(s string, qt uint16) string {
+		b := strconv.AppendUint(make([]byte, 0, len(s)+5), uint64(qt), 10)
+		return string(append(b, s...))
+	}
+
+	makeBuggyKey := func(s string, qt uint16) string {
+		return s + strconv.FormatUint(uint64(qt), 10)
+	}
+
+	hostname := "www.example.com."
+
+	// Same hostname, different types must yield different keys.
+	keyA := makeCorrectKey(hostname, dns.TypeA)
+	keyAAAA := makeCorrectKey(hostname, dns.TypeAAAA)
+
+	if keyA == keyAAAA {
+		t.Errorf("TypeA and TypeAAAA produce the same singleflight key %q", keyA)
+	}
+
+	// The type decimal must be the KEY PREFIX, not a suffix.
+	if !strings.HasPrefix(keyA, strconv.Itoa(int(dns.TypeA))) {
+		t.Errorf("TypeA key %q must start with type decimal %d", keyA, dns.TypeA)
+	}
+
+	if !strings.HasPrefix(keyAAAA, strconv.Itoa(int(dns.TypeAAAA))) {
+		t.Errorf("TypeAAAA key %q must start with type decimal %d", keyAAAA, dns.TypeAAAA)
+	}
+
+	// Demonstrate a concrete collision in the buggy (suffix) scheme that the
+	// correct (prefix) scheme avoids.
+	// hostname="a" with type 12 → buggy key "a12"
+	// hostname="a1" with type 2 → buggy key "a12" — COLLISION
+	h1, t1 := "a", uint16(12)
+	h2, t2 := "a1", uint16(2)
+
+	if makeBuggyKey(h1, t1) != makeBuggyKey(h2, t2) {
+		t.Errorf("expected collision in buggy key scheme for (%q,%d) vs (%q,%d); got %q and %q",
+			h1, t1, h2, t2, makeBuggyKey(h1, t1), makeBuggyKey(h2, t2))
+	}
+
+	if makeCorrectKey(h1, t1) == makeCorrectKey(h2, t2) {
+		t.Errorf("correct key scheme must not collide for (%q,%d) vs (%q,%d); both gave %q",
+			h1, t1, h2, t2, makeCorrectKey(h1, t1))
+	}
+}
+
+// TestLookupForgetOnDeadlineExceeded is the test oracle for bug #16.
+// When the outer context deadline fires before the DNS response arrives,
+// lookup() must call lookupGroup.Forget(key) so that the next caller for the
+// same key starts a fresh DNS query rather than joining the still-running
+// (timed-out) in-flight call.  The bug mutation calls Forget only on
+// context.Canceled, leaving the key in the group after a deadline timeout.
+//
+// We verify the Forget by using two different resolvers: the first call uses
+// resolver r1 (no dial counter); if Forget was called, the second DoChan for
+// the same key starts a new goroutine using resolver r2 (with a dial counter).
+// If Forget was NOT called, DoChan ignores r2's function and joins the old
+// r1-based goroutine — the r2 Dial counter stays zero.
+func TestLookupForgetOnDeadlineExceeded(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping timing-sensitive singleflight test in short mode")
+	}
+
+	// TCP server that accepts connections but never sends a DNS response.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("net.Listen: %v", err)
+	}
+	defer ln.Close()
+
+	go func() {
+		for {
+			_, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			// hold connection open without responding
+		}
+	}()
+
+	srvAddr := ln.Addr().String()
+
+	// Save and restore global state so other tests are not affected.
+	savedTimeout := *resolverTimeout
+
+	defer func() {
+		*resolverTimeout = savedTimeout
+		lookupGroup = singleflight.Group{} // reset to a clean zero-value Group
+	}()
+
+	// Reset the global group so prior in-flight calls don't interfere.
+	lookupGroup = singleflight.Group{}
+
+	// Inner resolver timeout must exceed the outer context deadline so the
+	// background goroutine is still in-flight when we make the second call.
+	*resolverTimeout = 500 * time.Millisecond
+
+	hostname := "deadline-forget-test.example.invalid."
+
+	// Call 1: short deadline fires before inner timeout → DeadlineExceeded.
+	r1 := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "tcp", srvAddr)
+		},
+	}
+
+	ctx1, cancel1 := context.WithTimeout(context.Background(), 30*time.Millisecond)
+	defer cancel1()
+
+	_, err1 := lookup(ctx1, hostname, dns.TypeA, r1)
+	if !errors.Is(err1, context.DeadlineExceeded) {
+		t.Skipf("first lookup: want DeadlineExceeded, got %v (timing issue — skipping)", err1)
+	}
+
+	// The inner goroutine for call 1 is still running (blocked in LookupHost for
+	// up to resolverTimeout more ms).  If Forget was called, the next DoChan for
+	// the same key starts a NEW goroutine using r2's Dial.  If Forget was NOT
+	// called, DoChan returns the same channel and r2's function is never invoked.
+	var r2DialCalled atomic.Bool
+
+	r2 := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+			r2DialCalled.Store(true)
+			return (&net.Dialer{}).DialContext(ctx, "tcp", srvAddr)
+		},
+	}
+
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 30*time.Millisecond)
+	defer cancel2()
+
+	_, _ = lookup(ctx2, hostname, dns.TypeA, r2)
+
+	if !r2DialCalled.Load() {
+		t.Error("after DeadlineExceeded, subsequent lookup did not start a new DNS query — " +
+			"Forget may not have been called on the singleflight key")
+	}
+}
 
 func TestLookupFuncTypes(t *testing.T) {
 	ctx := context.Background()

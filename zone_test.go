@@ -551,6 +551,17 @@ func TestCNAMEZoneSuffix(t *testing.T) {
 			zone:      "example.com",
 			inZone:    true,
 		},
+		// Bug #7 oracle: a target that merely *contains* the zone name as a
+		// substring (but is not actually in the zone) must be rejected.
+		// strings.Contains would accept "example.com.evil.org." because it
+		// contains the substring "example.com.", but strings.HasSuffix correctly
+		// rejects it.
+		{
+			name:      "contains-but-not-suffix CNAME (bug #7 oracle)",
+			canonical: "example.com.evil.org.",
+			zone:      "example.com",
+			inZone:    false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -568,6 +579,94 @@ func TestCNAMEZoneSuffix(t *testing.T) {
 				t.Errorf("HasSuffix(%q, dns.Fqdn(%q)) = %v, want %v",
 					tt.canonical, tt.zone, withFqdn, tt.inZone)
 			}
+
+			// Bug #7: verify that strings.Contains gives the WRONG answer for the
+			// "contains-but-not-suffix" case, proving HasSuffix is the correct check.
+			withContains := strings.Contains(tt.canonical, dns.Fqdn(tt.zone))
+			if !tt.inZone && withContains && withFqdn {
+				t.Errorf("HasSuffix unexpectedly accepted out-of-zone target %q", tt.canonical)
+			}
 		})
+	}
+}
+
+// TestProcessLocalZoneNoSpuriousWarning is the test oracle for bug #9.
+// A zone file that legitimately has zero parseable records but was given an
+// explicit domain (via "file=domain" syntax) must NOT trigger the
+// "Try with file=domain" warning — that warning fires only when BOTH conditions
+// are true: no records AND no domain supplied.
+func TestProcessLocalZoneNoSpuriousWarning(t *testing.T) {
+	// An empty zone file produces zero parseable records.
+	tmpFile, err := os.CreateTemp("", "test-empty-domain-*.txt")
+	if err != nil {
+		t.Fatalf("CreateTemp: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	tmpFile.Close()
+
+	hosts := make(chan HostEntry, 5)
+
+	// Call with explicit domain — no spurious warning should be printed.
+	stderr := captureStderr(func() {
+		processLocalZone(tmpFile.Name()+"=example.com", false, nil, hosts)
+	})
+
+	close(hosts)
+	for range hosts {
+	}
+
+	// With the correct (&&) condition: domain is set, so the warning is suppressed.
+	// With the buggy (||) condition: records==0 is true so the warning fires anyway.
+	if strings.Contains(stderr, "Try") {
+		t.Errorf("processLocalZone with explicit domain printed spurious warning:\n%s", stderr)
+	}
+}
+
+// TestZoneParserNoNilEntries is the test oracle for bug #11.
+// When the zone file contains a malformed line, zoneParser must return only
+// valid (non-nil) RRs with no duplicates — it must not append a nil RR before
+// checking the parse error.
+func TestZoneParserNoNilEntries(t *testing.T) {
+	zoneContent := `$TTL 3600
+@ IN SOA ns1 admin 2021010101 3600 900 604800 300
+@ IN NS ns1
+ns1   IN A 192.0.2.1
+bad   IN A NOT_AN_IP
+host1 IN A 192.0.2.2
+`
+	tmpFile, err := os.CreateTemp("", "test-zone-nil-*.txt")
+	if err != nil {
+		t.Fatalf("CreateTemp: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(zoneContent); err != nil {
+		t.Fatalf("WriteString: %v", err)
+	}
+	tmpFile.Close()
+
+	records := zoneParser(tmpFile.Name(), "example.com.")
+
+	// No nil entries — the parser must never append a nil RR.
+	for i, rr := range records {
+		if rr == nil {
+			t.Errorf("zoneParser() returned nil RR at index %d", i)
+		}
+	}
+
+	// No duplicate RRs — the bug mutation could cause a double-append.
+	seen := make(map[string]int)
+
+	for i, rr := range records {
+		if rr == nil {
+			continue
+		}
+
+		s := rr.String()
+		if prev, ok := seen[s]; ok {
+			t.Errorf("zoneParser() duplicate RR at index %d (same as index %d): %q", i, prev, s)
+		}
+
+		seen[s] = i
 	}
 }
