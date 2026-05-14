@@ -44,7 +44,7 @@ func TestDisplayHostEntries(t *testing.T) {
 		ip2: {"host-c": struct{}{}},
 		ip3: {"host-d": struct{}{}},
 	}
-	// Deliberately unsorted to verify output sorts by IP.
+	// unsorted input — output must sort by IP
 	keys := []netip.Addr{ip3, ip1, ip2}
 
 	output := captureStdout(func() {
@@ -61,7 +61,6 @@ func TestDisplayHostEntries(t *testing.T) {
 		t.Errorf("line[0] expected header comment, got %q", lines[0])
 	}
 
-	// Lines 1-3 must be sorted by IP address.
 	if !strings.HasPrefix(lines[1], "192.0.2.1\t") {
 		t.Errorf("line[1] expected 192.0.2.1, got %q", lines[1])
 	}
@@ -74,7 +73,7 @@ func TestDisplayHostEntries(t *testing.T) {
 		t.Errorf("line[3] expected 2001:db8::1, got %q", lines[3])
 	}
 
-	// Multiple hostnames must be sorted alphabetically and space-separated.
+	// hostnames sorted alphabetically, space-separated
 	if lines[1] != "192.0.2.1\thost-a host-b" {
 		t.Errorf("line[1] = %q, want %q", lines[1], "192.0.2.1\thost-a host-b")
 	}

@@ -114,7 +114,7 @@ func TestUnmapParseAddr(t *testing.T) {
 }
 
 func TestZoneParser(t *testing.T) {
-	// Zone file without $ORIGIN; domain is supplied via parameter.
+	// no $ORIGIN; domain supplied via parameter
 	zoneContent := `$TTL 3600
 @ IN SOA ns1 admin 2021010101 3600 900 604800 300
 @ IN NS ns1
@@ -186,7 +186,7 @@ func TestProcessRecords(t *testing.T) {
 			Hdr:  dns.RR_Header{Name: "host2.example.com.", Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: 3600},
 			AAAA: net.IP{0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 		},
-		// SOA is not A/AAAA/CNAME; must be silently ignored.
+		// SOA must be silently skipped (not A/AAAA/CNAME)
 		&dns.SOA{
 			Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 3600},
 		},
@@ -286,7 +286,7 @@ func TestProcessRecordsCIDR(t *testing.T) {
 }
 
 func TestProcessLocalZone(t *testing.T) {
-	// Zone file without $ORIGIN; domain supplied via "file=domain" argument.
+	// no $ORIGIN; domain supplied via "file=domain" argument
 	zoneContent := `$TTL 3600
 @ IN SOA ns1 admin 2021010101 3600 900 604800 300
 @ IN NS ns1
@@ -314,15 +314,14 @@ host2 IN AAAA 2001:db8::1
 		results = append(results, h)
 	}
 
-	// Expect at least 3 host entries: ns1, host1, host2 (SOA/NS are skipped)
+	// ns1, host1, host2; SOA/NS skipped
 	if len(results) < 3 {
 		t.Errorf("processLocalZone() = %d entries, want at least 3", len(results))
 	}
 }
 
 func TestProcessLocalZoneNoSeparator(t *testing.T) {
-	// Without "=domain", zoneParser is called with domain=""; non-$ORIGIN file yields no records
-	// and a warning is printed (but no panic or crash).
+	// no "=domain" + no $ORIGIN: yields zero records and a warning
 	tmpFile, err := os.CreateTemp("", "test-empty-zone-*.txt")
 	if err != nil {
 		t.Fatalf("CreateTemp: %v", err)
@@ -345,7 +344,7 @@ func TestProcessLocalZoneNoSeparator(t *testing.T) {
 }
 
 func TestZoneParserOrigin(t *testing.T) {
-	// Zone file that carries its own $ORIGIN; domain parameter is empty.
+	// $ORIGIN inside file; empty domain parameter
 	zoneContent := `$ORIGIN example.com.
 $TTL 3600
 @ IN SOA ns1.example.com. admin.example.com. 2021010101 3600 900 604800 300
@@ -365,7 +364,7 @@ host2 IN AAAA 2001:db8::1
 	}
 	tmpFile.Close()
 
-	// Pass empty domain — origin must come from $ORIGIN in the file.
+	// empty domain — origin must come from in-file $ORIGIN
 	records := zoneParser(tmpFile.Name(), "")
 
 	var aCount, aaaaCount int
@@ -387,9 +386,7 @@ host2 IN AAAA 2001:db8::1
 }
 
 func TestZoneParserMalformedLine(t *testing.T) {
-	// A malformed RDATA value should cause a parse error; the parser must not
-	// panic and must return whatever records it parsed successfully before the
-	// error.
+	// malformed RDATA: parser must not panic and must return prior valid records
 	zoneContent := `$TTL 3600
 @ IN SOA ns1 admin 2021010101 3600 900 604800 300
 @ IN NS ns1
@@ -408,7 +405,6 @@ host1 IN A 192.0.2.2
 	}
 	tmpFile.Close()
 
-	// Must not panic; must return at least the records parsed before the error.
 	records := zoneParser(tmpFile.Name(), "example.com.")
 	if len(records) == 0 {
 		t.Error("zoneParser() with malformed line: expected at least some valid records before the error")
@@ -453,13 +449,11 @@ func TestProcessRecordsCNAMEGreedy(t *testing.T) {
 		},
 	}
 
-	// DNS lookup for reserved example.com hostnames will fail (NXDOMAIN).
-	// The test verifies the code path runs without panicking.
+	// example.com lookups NXDOMAIN; verifies no panic on failure path
 	processRecords("example.com", false, nil, hosts, rrs)
 	close(hosts)
 
 	for range hosts {
-		// drain channel
 	}
 }
 
@@ -489,22 +483,18 @@ func TestProcessRecordsCNAMENonGreedy(t *testing.T) {
 		},
 	}
 
-	// With greedyCNAME=false the code calls lookup(TypeCNAME) first.
-	// DNS will fail for these hostnames; the goroutines return early.
-	// No panic, no entries expected from a failing DNS.
+	// greedyCNAME=false routes through lookup(TypeCNAME); DNS fails, no entries
 	processRecords("example.com", false, nil, hosts, rrs)
 	close(hosts)
 
 	for range hosts {
-		// drain channel
 	}
 }
 
 func TestProcessLocalZoneMissingFileDomain(t *testing.T) {
 	hosts := make(chan HostEntry, 5)
 
-	// file=domain format where the file does not exist; should not panic
-	// and return 0 entries (zoneParser fails silently when domain is set).
+	// missing file with file=domain: no panic, 0 entries (silent when domain set)
 	processLocalZone("/nonexistent/axfr2hosts-test-missing.txt=example.com", false, nil, hosts)
 	close(hosts)
 
@@ -526,8 +516,8 @@ func TestProcessLocalZoneMissingFileDomain(t *testing.T) {
 func TestCNAMEZoneSuffix(t *testing.T) {
 	tests := []struct {
 		name      string
-		canonical string // as returned by net.LookupCNAME (always has trailing dot)
-		zone      string // as stored after parseFlags strips the trailing dot
+		canonical string // LookupCNAME output: always trailing dot
+		zone      string // parseFlags strips trailing dot
 		inZone    bool
 	}{
 		{
@@ -554,11 +544,7 @@ func TestCNAMEZoneSuffix(t *testing.T) {
 			zone:      "example.com",
 			inZone:    true,
 		},
-		// Bug #7 oracle: a target that merely *contains* the zone name as a
-		// substring (but is not actually in the zone) must be rejected.
-		// strings.Contains would accept "example.com.evil.org." because it
-		// contains the substring "example.com.", but strings.HasSuffix correctly
-		// rejects it.
+		// bug #7: substring match would falsely accept "example.com.evil.org."
 		{
 			name:      "contains-but-not-suffix CNAME (bug #7 oracle)",
 			canonical: "example.com.evil.org.",
@@ -569,22 +555,20 @@ func TestCNAMEZoneSuffix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Regression: without dns.Fqdn the suffix never matched because
-			// "target.example.com." does not end with "example.com" (no trailing dot).
+			// bare zone (no dns.Fqdn) misses the trailing-dot suffix
 			withoutFqdn := strings.HasSuffix(tt.canonical, tt.zone)
 			if tt.inZone && withoutFqdn {
 				t.Logf("note: bare zone suffix matched for %q — likely a zone with no dot-separated prefix", tt.canonical)
 			}
 
-			// Fix: dns.Fqdn(zone) adds the trailing dot, matching LookupCNAME output.
+			// dns.Fqdn aligns zone with LookupCNAME output
 			withFqdn := strings.HasSuffix(tt.canonical, dns.Fqdn(tt.zone))
 			if withFqdn != tt.inZone {
 				t.Errorf("HasSuffix(%q, dns.Fqdn(%q)) = %v, want %v",
 					tt.canonical, tt.zone, withFqdn, tt.inZone)
 			}
 
-			// Bug #7: verify that strings.Contains gives the WRONG answer for the
-			// "contains-but-not-suffix" case, proving HasSuffix is the correct check.
+			// bug #7 guard: HasSuffix must reject what Contains would accept
 			withContains := strings.Contains(tt.canonical, dns.Fqdn(tt.zone))
 			if !tt.inZone && withContains && withFqdn {
 				t.Errorf("HasSuffix unexpectedly accepted out-of-zone target %q", tt.canonical)
@@ -599,7 +583,7 @@ func TestCNAMEZoneSuffix(t *testing.T) {
 // "Try with file=domain" warning — that warning fires only when BOTH conditions
 // are true: no records AND no domain supplied.
 func TestProcessLocalZoneNoSpuriousWarning(t *testing.T) {
-	// An empty zone file produces zero parseable records.
+	// empty file → zero parseable records
 	tmpFile, err := os.CreateTemp("", "test-empty-domain-*.txt")
 	if err != nil {
 		t.Fatalf("CreateTemp: %v", err)
@@ -609,7 +593,7 @@ func TestProcessLocalZoneNoSpuriousWarning(t *testing.T) {
 
 	hosts := make(chan HostEntry, 5)
 
-	// Call with explicit domain — no spurious warning should be printed.
+	// explicit domain must suppress the "Try with file=domain" warning
 	stderr := captureStderr(func() {
 		processLocalZone(tmpFile.Name()+"=example.com", false, nil, hosts)
 	})
@@ -618,8 +602,7 @@ func TestProcessLocalZoneNoSpuriousWarning(t *testing.T) {
 	for range hosts {
 	}
 
-	// With the correct (&&) condition: domain is set, so the warning is suppressed.
-	// With the buggy (||) condition: records==0 is true so the warning fires anyway.
+	// && (correct) suppresses warning when domain is set; || (buggy) would still fire
 	if strings.Contains(stderr, "Try") {
 		t.Errorf("processLocalZone with explicit domain printed spurious warning:\n%s", stderr)
 	}
@@ -650,14 +633,14 @@ host1 IN A 192.0.2.2
 
 	records := zoneParser(tmpFile.Name(), "example.com.")
 
-	// No nil entries — the parser must never append a nil RR.
+	// parser must never append nil RRs
 	for i, rr := range records {
 		if rr == nil {
 			t.Errorf("zoneParser() returned nil RR at index %d", i)
 		}
 	}
 
-	// No duplicate RRs — the bug mutation could cause a double-append.
+	// double-append regression: no duplicate RRs
 	seen := make(map[string]int)
 
 	for i, rr := range records {

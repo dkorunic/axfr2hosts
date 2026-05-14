@@ -29,7 +29,6 @@ func displayHostEntries(keysAddr []netip.Addr, results HostMap) {
 	t := time.Now().Format(time.RFC1123)
 	fmt.Fprintf(w, "# axfr2hosts generated list at %v\n", t)
 
-	// sorting by IP
 	sort.Slice(keysAddr, func(i, j int) bool {
 		return keysAddr[i].Compare(keysAddr[j]) < 0
 	})
@@ -50,7 +49,6 @@ func displayHostEntries(keysAddr []netip.Addr, results HostMap) {
 			keysHost = append(keysHost, k)
 		}
 
-		// sorting by hostname
 		sort.Strings(keysHost)
 
 		x = 0

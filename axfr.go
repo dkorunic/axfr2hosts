@@ -25,12 +25,10 @@ func zoneTransfer(zone, server string) []dns.RR {
 
 	zone = dns.Fqdn(zone)
 
-	// prepare AXFR
 	tr := new(dns.Transfer)
 	m := new(dns.Msg)
 	m.SetAxfr(zone)
 
-	// set timeouts
 	tr.DialTimeout = dialTimeout
 	tr.ReadTimeout = readTimeout
 	tr.WriteTimeout = writeTimeout
@@ -39,7 +37,6 @@ func zoneTransfer(zone, server string) []dns.RR {
 
 	var c chan *dns.Envelope
 
-	// execute AXFR with automatic retrying
 	err := retry.New(
 		retry.Attempts(*maxRetries),
 		retry.Context(ctx),
@@ -61,7 +58,6 @@ func zoneTransfer(zone, server string) []dns.RR {
 		return records
 	}
 
-	// parse messages and fetch RRs if any
 	for msg := range c {
 		if msg.Error != nil {
 			fmt.Fprintf(os.Stderr, "Error: AXFR payload problem for zone %q / server %q, but will try to continue: %v\n",

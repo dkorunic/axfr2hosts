@@ -42,7 +42,7 @@ func TestRangerInit(t *testing.T) {
 			checkIPs: []netip.Addr{
 				netip.MustParseAddr("192.0.2.1"),
 			},
-			checkResults: []bool{false}, // ranger has no valid entries
+			checkResults: []bool{false}, // empty ranger
 		},
 		{
 			name:       "Mixed valid and invalid CIDRs",

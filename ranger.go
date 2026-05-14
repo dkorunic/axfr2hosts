@@ -18,12 +18,10 @@ func rangerInit(cidrList []string) (cidranger.Ranger[struct{}], bool) {
 		doCIDR bool
 	)
 
-	// prepare CIDR matching
 	if len(cidrList) > 0 {
 		doCIDR = true
 		ranger = cidranger.NewPCTrieRanger[struct{}]()
 
-		// parse and insert individual networks
 		for _, s := range cidrList {
 			n, err := netip.ParsePrefix(s)
 			if err != nil {

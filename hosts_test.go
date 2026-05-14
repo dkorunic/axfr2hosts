@@ -9,7 +9,6 @@ import (
 )
 
 func TestProcessHost(t *testing.T) {
-	// Save original flag values
 	origStripDomain := *stripDomain
 	origStripUnstrip := *stripUnstrip
 	defer func() {
@@ -103,8 +102,7 @@ func TestProcessHost(t *testing.T) {
 			ipAddr:      netip.MustParseAddr("192.0.2.1"),
 			stripDomain: true,
 			expected: []HostEntry{
-				// "example.com" does not end with ".example.com", so TrimSuffix
-				// is a no-op and the full label is emitted.
+				// apex label has no ".example.com" suffix; TrimSuffix is a no-op
 				{label: "example.com", ipAddr: netip.MustParseAddr("192.0.2.1")},
 			},
 		},
@@ -205,7 +203,7 @@ func TestWriteHostEntriesDuplicateLabel(t *testing.T) {
 
 	hosts <- HostEntry{label: "host1", ipAddr: ip1}
 	hosts <- HostEntry{label: "host2", ipAddr: ip1}
-	hosts <- HostEntry{label: "host1", ipAddr: ip1} // duplicate label same IP
+	hosts <- HostEntry{label: "host1", ipAddr: ip1} // duplicate
 	close(hosts)
 
 	keys := []netip.Addr{}

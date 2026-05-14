@@ -71,7 +71,6 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 	var r net.Resolver
 
 	if *resolverAddress != "" {
-		// custom DNS resolver
 		r = net.Resolver{
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
@@ -84,12 +83,10 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 		r = net.Resolver{PreferGo: true}
 	}
 
-	// process each RR
 	for _, rr := range zoneRecords {
 		switch t := rr.(type) {
 		case *dns.A:
 			wg.Go(func() {
-				// ignore wildcards if ignoreStar is used
 				if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
 					return
 				}
@@ -99,7 +96,6 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 					return
 				}
 
-				// if CIDR matching is true, check if IP is whitelisted
 				if doCIDR && ranger != nil {
 					if c, _ := ranger.Contains(ipAddr); !c {
 						return
@@ -110,7 +106,6 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 			})
 		case *dns.AAAA:
 			wg.Go(func() {
-				// ignore wildcards if ignoreStar is used
 				if *ignoreStar && strings.Contains(t.Hdr.Name, wildcard) {
 					return
 				}
@@ -120,7 +115,6 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 					return
 				}
 
-				// if CIDR matching is true, check if IP is whitelisted
 				if doCIDR && ranger != nil {
 					if c, _ := ranger.Contains(ipAddr6); !c {
 						return
@@ -133,7 +127,7 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 			wg.Go(func() {
 				ctx := context.Background()
 
-				// ignore out-of-zone targets if not using greedyCNAME
+				// non-greedy: drop CNAMEs whose target leaves the zone
 				if !*greedyCNAME {
 					cnames, err := lookup(ctx, t.Hdr.Name, dns.TypeCNAME, &r)
 					if err != nil {
@@ -150,14 +144,12 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 					return
 				}
 
-				// loop through resolved array
 				for _, a := range addrs {
 					ipAddr, err := unmapParseAddr(a)
 					if err != nil {
 						continue
 					}
 
-					// if CIDR matching is true, check if IP is whitelisted
 					if doCIDR && ranger != nil {
 						if c, _ := ranger.Contains(ipAddr); !c {
 							continue
@@ -167,7 +159,6 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 					processHost(t.Hdr.Name, zone, ipAddr, hosts)
 				}
 			})
-		// every other RR type is skipped over
 		default:
 		}
 	}
@@ -179,7 +170,6 @@ func processRecords(zone string, doCIDR bool, ranger cidranger.Ranger[struct{}],
 func zoneParser(zone, domain string) []dns.RR {
 	var records []dns.RR
 
-	// read a whole zone into memory
 	z, err := os.ReadFile(zone)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: problem reading zone file: %q: %v\n", zone, err)
@@ -187,10 +177,9 @@ func zoneParser(zone, domain string) []dns.RR {
 		return records
 	}
 
-	// initialize RFC 1035 zone parser
+	// RFC 1035 zone parser
 	zp := dns.NewZoneParser(bytes.NewReader(z), domain, "")
 
-	// fetch all RRs
 	for rr, ok := zp.Next(); ok; rr, ok = zp.Next() {
 		if err := zp.Err(); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: problem parsing zone %q but will try to continue: %v\n", zone, err)

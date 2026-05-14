@@ -36,7 +36,6 @@ func TestLookupKeyTypePrefix(t *testing.T) {
 
 	hostname := "www.example.com."
 
-	// Same hostname, different types must yield different keys.
 	keyA := makeCorrectKey(hostname, dns.TypeA)
 	keyAAAA := makeCorrectKey(hostname, dns.TypeAAAA)
 
@@ -44,7 +43,6 @@ func TestLookupKeyTypePrefix(t *testing.T) {
 		t.Errorf("TypeA and TypeAAAA produce the same singleflight key %q", keyA)
 	}
 
-	// The type decimal must be the KEY PREFIX, not a suffix.
 	if !strings.HasPrefix(keyA, strconv.Itoa(int(dns.TypeA))) {
 		t.Errorf("TypeA key %q must start with type decimal %d", keyA, dns.TypeA)
 	}
@@ -53,10 +51,7 @@ func TestLookupKeyTypePrefix(t *testing.T) {
 		t.Errorf("TypeAAAA key %q must start with type decimal %d", keyAAAA, dns.TypeAAAA)
 	}
 
-	// Demonstrate a concrete collision in the buggy (suffix) scheme that the
-	// correct (prefix) scheme avoids.
-	// hostname="a" with type 12 → buggy key "a12"
-	// hostname="a1" with type 2 → buggy key "a12" — COLLISION
+	// suffix scheme: ("a",12) and ("a1",2) both produce "a12" — collision
 	h1, t1 := "a", uint16(12)
 	h2, t2 := "a1", uint16(2)
 
@@ -88,7 +83,7 @@ func TestLookupForgetOnDeadlineExceeded(t *testing.T) {
 		t.Skip("skipping timing-sensitive singleflight test in short mode")
 	}
 
-	// TCP server that accepts connections but never sends a DNS response.
+	// black-hole TCP server: accepts but never responds
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("net.Listen: %v", err)
@@ -101,30 +96,26 @@ func TestLookupForgetOnDeadlineExceeded(t *testing.T) {
 			if err != nil {
 				return
 			}
-			// hold connection open without responding
 		}
 	}()
 
 	srvAddr := ln.Addr().String()
 
-	// Save and restore global state so other tests are not affected.
 	savedTimeout := *resolverTimeout
 
 	defer func() {
 		*resolverTimeout = savedTimeout
-		lookupGroup = singleflight.Group{} // reset to a clean zero-value Group
+		lookupGroup = singleflight.Group{}
 	}()
 
-	// Reset the global group so prior in-flight calls don't interfere.
 	lookupGroup = singleflight.Group{}
 
-	// Inner resolver timeout must exceed the outer context deadline so the
-	// background goroutine is still in-flight when we make the second call.
+	// inner timeout > outer deadline keeps the goroutine in-flight
 	*resolverTimeout = 500 * time.Millisecond
 
 	hostname := "deadline-forget-test.example.invalid."
 
-	// Call 1: short deadline fires before inner timeout → DeadlineExceeded.
+	// outer deadline fires first → DeadlineExceeded
 	r1 := &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
@@ -140,10 +131,7 @@ func TestLookupForgetOnDeadlineExceeded(t *testing.T) {
 		t.Skipf("first lookup: want DeadlineExceeded, got %v (timing issue — skipping)", err1)
 	}
 
-	// The inner goroutine for call 1 is still running (blocked in LookupHost for
-	// up to resolverTimeout more ms).  If Forget was called, the next DoChan for
-	// the same key starts a NEW goroutine using r2's Dial.  If Forget was NOT
-	// called, DoChan returns the same channel and r2's function is never invoked.
+	// r2.Dial fires only if Forget freed the key; otherwise DoChan reuses call 1
 	var r2DialCalled atomic.Bool
 
 	r2 := &net.Resolver{

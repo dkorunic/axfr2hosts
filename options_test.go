@@ -17,9 +17,7 @@ import (
 // "[2001:db8::1]:53").  The test documents the expected normalization for each
 // address family.
 func TestIPv6ServerPortHandling(t *testing.T) {
-	// normalizePort replicates the fixed logic from options.go: use SplitHostPort
-	// to detect a missing port rather than strings.Contains, so bare IPv6 addresses
-	// are handled correctly.
+	// mirrors options.go: SplitHostPort handles bare IPv6 correctly
 	normalizePort := func(server string) string {
 		if _, _, err := net.SplitHostPort(server); err != nil {
 			return net.JoinHostPort(server, dnsPort)
@@ -49,10 +47,7 @@ func TestIPv6ServerPortHandling(t *testing.T) {
 			expected: "[2001:db8::1]:53",
 		},
 		{
-			// Bug #13: bare IPv6 contains ":" so !Contains is false and
-			// JoinHostPort is never called.  The result must still be the
-			// bracketed form with port, but the current logic produces the
-			// bare address.
+			// bug #13: bare IPv6 contains ":" — old !Contains check skipped JoinHostPort
 			name:     "bare IPv6 address must get port appended",
 			server:   "2001:db8::1",
 			expected: "[2001:db8::1]:53",
@@ -76,7 +71,7 @@ func TestIPv6ServerPortHandling(t *testing.T) {
 // processed only once.  The bug mutation removes the guard and always appends,
 // causing duplicate AXFR transfers and doubled output.
 func TestZoneDeduplicate(t *testing.T) {
-	// Replicate the deduplication logic from parseFlags.
+	// mirrors parseFlags dedup logic
 	deduplicate := func(args []string) []string {
 		zones := make([]string, 0, len(args))
 		zoneMap := make(map[string]struct{}, len(args))

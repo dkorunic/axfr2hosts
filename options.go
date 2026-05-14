@@ -73,13 +73,11 @@ func parseFlags() ([]string, string, []string) {
 	}
 
 	for _, arg := range flag.Args() {
-		// nameserver starts with '@'
+		// nameserver argument starts with '@'
 		if after, ok := strings.CutPrefix(arg, dnsPrefix); ok {
 			server = after
 
-			// make sure server is in host:port format; use SplitHostPort instead of
-			// strings.Contains so that bare IPv6 addresses (which contain ":") are
-			// also wrapped correctly by net.JoinHostPort.
+			// SplitHostPort beats strings.Contains: bare IPv6 contains ':' too
 			if _, _, err := net.SplitHostPort(server); err != nil {
 				server = net.JoinHostPort(server, dnsPort)
 			}
@@ -87,29 +85,24 @@ func parseFlags() ([]string, string, []string) {
 			continue
 		}
 
-		// otherwise it is a zone name; make sure to strip ending dot
 		arg = strings.TrimSuffix(arg, endingDot)
 
-		// add zone only if unique
 		if _, ok := zoneMap[arg]; !ok {
 			zones = append(zones, arg)
 			zoneMap[arg] = struct{}{}
 		}
 	}
 
-	// check if zones are empty
 	if len(zones) == 0 {
 		fmt.Fprintf(os.Stderr, "Error: no zones to transfer or parse\n")
 		flag.Usage()
 	}
 
-	// split if non-empty
 	var cidrList []string
 	if len(*cidrString) > 0 {
 		cidrList = strings.Split(*cidrString, cidrSeparator)
 	}
 
-	// check if resolverIP is in server:port format
 	if *resolverAddress != "" && !strings.Contains(*resolverAddress, portSeparator) {
 		*resolverAddress = net.JoinHostPort(*resolverAddress, dnsPort)
 	}

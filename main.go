@@ -46,7 +46,6 @@ func main() {
 
 	zones, server, cidrList := parseFlags()
 
-	// enable CPU profiling dump on exit
 	if *cpuProfile != "" {
 		f, err := os.Create(*cpuProfile)
 		if err != nil {
@@ -60,7 +59,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	// enable memory profile dump on exit
 	if *memProfile != "" {
 		f, err := os.Create(*memProfile)
 		if err != nil {
@@ -87,23 +85,19 @@ func main() {
 
 	var wgMon, wgWrk sync.WaitGroup
 
-	// host map/key slice managing monitor routine
+	// sole owner of entries/keys; lock-free via channel
 	wgMon.Go(func() {
 		writeHostEntries(hostChan, &keys, entries)
 	})
 
-	// limit total AXFRs in progress
 	semAXFR := make(chan struct{}, *maxTransfers)
 
-	// routines for processing local and remote zones
 	for _, zone := range zones {
 		if server == "" {
-			// there is no remote server, so assume zones are local Bind9 files
 			wgWrk.Go(func() {
 				processLocalZone(zone, doCIDR, ranger, hostChan)
 			})
 		} else {
-			// otherwise assume remote AXFR-able zones
 			wgWrk.Add(1)
 			semAXFR <- struct{}{}
 
