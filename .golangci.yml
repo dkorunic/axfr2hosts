@@ -6,15 +6,18 @@ linters:
     - depguard
     - dupl
     - exhaustruct
+    - exhaustruct_v5
     - forbidigo
     - funlen
     - gochecknoglobals
     - gocognit
+    - gomodguard
     - lll
     - mnd
+    - noinlineerr
     - varnamelen
     - wrapcheck
-    - noinlineerr
+    - wsl
     - wsl_v5
   exclusions:
     generated: lax

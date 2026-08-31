@@ -31,7 +31,7 @@ var (
 
 // main is the entry point of the application.
 func main() {
-	_, _ = memlimit.SetGoMemLimitWithOpts(
+	_, _ = memlimit.Set(
 		memlimit.WithRatio(maxMemRatio),
 		memlimit.WithProvider(
 			memlimit.ApplyFallback(
