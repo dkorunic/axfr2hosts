@@ -38,7 +38,7 @@ func zoneTransfer(zone, server string) []dns.RR {
 	var c chan *dns.Envelope
 
 	err := retry.New(
-		retry.Attempts(*maxRetries),
+		retry.Attempts(atLeastOne(*maxRetries)),
 		retry.Context(ctx),
 	).Do(
 		func() error {

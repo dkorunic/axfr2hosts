@@ -90,7 +90,7 @@ func main() {
 		writeHostEntries(hostChan, &keys, entries)
 	})
 
-	semAXFR := make(chan struct{}, *maxTransfers)
+	semAXFR := make(chan struct{}, atLeastOne(*maxTransfers))
 
 	for _, zone := range zones {
 		if server == "" {
@@ -103,9 +103,9 @@ func main() {
 
 			go func() {
 				defer wgWrk.Done()
+				defer func() { <-semAXFR }()
 
 				processRemoteZone(zone, server, doCIDR, ranger, hostChan)
-				<-semAXFR
 			}()
 		}
 	}

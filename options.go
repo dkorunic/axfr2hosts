@@ -18,7 +18,6 @@ const (
 	dnsPort                = "53"
 	dnsPrefix              = "@"
 	cidrSeparator          = ","
-	portSeparator          = ":"
 	projectHome            = "https://github.com/dkorunic/axfr2hosts"
 	maxTransfersDefault    = 10
 	maxRetriesDefault      = 3
@@ -62,36 +61,12 @@ func parseFlags() ([]string, string, []string) {
 		os.Exit(0)
 	}
 
-	var server string
-
-	zones := make([]string, 0, len(flag.Args()))
-	zoneMap := make(map[string]struct{}, len(flag.Args()))
-
 	if len(flag.Args()) == 0 {
 		fmt.Fprintf(os.Stderr, "Error: no arguments were given\n")
 		flag.Usage()
 	}
 
-	for _, arg := range flag.Args() {
-		// nameserver argument starts with '@'
-		if after, ok := strings.CutPrefix(arg, dnsPrefix); ok {
-			server = after
-
-			// SplitHostPort beats strings.Contains: bare IPv6 contains ':' too
-			if _, _, err := net.SplitHostPort(server); err != nil {
-				server = net.JoinHostPort(server, dnsPort)
-			}
-
-			continue
-		}
-
-		arg = strings.TrimSuffix(arg, endingDot)
-
-		if _, ok := zoneMap[arg]; !ok {
-			zones = append(zones, arg)
-			zoneMap[arg] = struct{}{}
-		}
-	}
+	zones, server := parseZoneArgs(flag.Args())
 
 	if len(zones) == 0 {
 		fmt.Fprintf(os.Stderr, "Error: no zones to transfer or parse\n")
@@ -103,9 +78,79 @@ func parseFlags() ([]string, string, []string) {
 		cidrList = strings.Split(*cidrString, cidrSeparator)
 	}
 
-	if *resolverAddress != "" && !strings.Contains(*resolverAddress, portSeparator) {
-		*resolverAddress = net.JoinHostPort(*resolverAddress, dnsPort)
+	if *resolverAddress != "" {
+		*resolverAddress = normalizeAddrPort(*resolverAddress)
 	}
 
 	return zones, server, cidrList
+}
+
+// normalizeAddrPort appends the default DNS port to addr unless it already carries
+// one.  SplitHostPort beats strings.Contains: a bare IPv6 address contains ':' too,
+// so a Contains-based check would leave it portless and unusable as a dial target.
+func normalizeAddrPort(addr string) string {
+	if _, _, err := net.SplitHostPort(addr); err == nil {
+		return addr
+	}
+
+	// A bracketed IPv6 literal carrying no port ("[::1]") is a natural thing to
+	// type, but JoinHostPort re-brackets any host containing ':' and would emit
+	// "[[::1]]:53".  Unwrap it first so the brackets are applied exactly once.
+	if inner, ok := strings.CutPrefix(addr, "["); ok {
+		if inner, ok := strings.CutSuffix(inner, "]"); ok {
+			addr = inner
+		}
+	}
+
+	return net.JoinHostPort(addr, dnsPort)
+}
+
+// parseZoneArgs splits positional arguments into a deduplicated zone list and an
+// optional server address.  Arguments prefixed with '@' name the server; the rest
+// are zones, trailing dot trimmed so "example.com." and "example.com" collapse.
+func parseZoneArgs(args []string) ([]string, string) {
+	var server string
+
+	zones := make([]string, 0, len(args))
+	zoneMap := make(map[string]struct{}, len(args))
+
+	for _, arg := range args {
+		// nameserver argument starts with '@'
+		if after, ok := strings.CutPrefix(arg, dnsPrefix); ok {
+			server = normalizeAddrPort(after)
+
+			continue
+		}
+
+		// TrimRight, not TrimSuffix: "example.com.." would otherwise survive as a
+		// distinct zone from "example.com" and defeat the deduplication below.
+		arg = strings.TrimRight(arg, endingDot)
+
+		// a bare "." (or "..") trims to nothing; an empty zone name is never
+		// useful and parseFlags reports it cleanly as "no zones"
+		if arg == "" {
+			continue
+		}
+
+		if _, ok := zoneMap[arg]; !ok {
+			zones = append(zones, arg)
+			zoneMap[arg] = struct{}{}
+		}
+	}
+
+	return zones, server
+}
+
+// atLeastOne clamps a user-supplied limit to a minimum of one.
+//
+// Zero is a plausible thing to type but pathological for both limits it guards:
+// a zero-capacity semaphore makes main's send block with no receiver yet started
+// ("all goroutines are asleep - deadlock!"), and retry-go reads Attempts(0) as
+// "retry until the call succeeds", which hangs forever against a dead nameserver.
+func atLeastOne(n uint) uint {
+	if n < 1 {
+		return 1
+	}
+
+	return n
 }

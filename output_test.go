@@ -12,6 +12,13 @@ import (
 	"testing"
 )
 
+// captureStdout redirects os.Stdout for the duration of f and returns whatever was
+// written to it.
+//
+// The pipe is drained concurrently rather than after f returns: an OS pipe buffers
+// only ~64KB, so a writer producing more than that would block forever waiting for
+// a reader that had not started yet.  Small outputs never notice; a large hosts
+// file does.
 func captureStdout(f func()) string {
 	old := os.Stdout
 
@@ -22,13 +29,23 @@ func captureStdout(f func()) string {
 
 	os.Stdout = w
 
+	var (
+		buf  bytes.Buffer
+		done = make(chan struct{})
+	)
+
+	go func() {
+		defer close(done)
+
+		_, _ = io.Copy(&buf, r)
+	}()
+
 	f()
 
 	w.Close()
 	os.Stdout = old
 
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
+	<-done
 	r.Close()
 
 	return buf.String()

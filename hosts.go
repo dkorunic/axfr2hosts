@@ -23,6 +23,13 @@ func processHost(label, zone string, ipAddr netip.Addr, hosts chan<- HostEntry) 
 	label = strings.TrimSuffix(label, endingDot)
 	label = strings.ToLower(label)
 
+	// A record owned by the root (".") trims to nothing, and an empty hostname
+	// emits a syntactically broken hosts line ("192.0.2.1\t" with no name).  The
+	// stripped branch below already guards against this; the unstripped path did not.
+	if label == "" {
+		return
+	}
+
 	if *stripDomain || *stripUnstrip {
 		labelStripped := strings.TrimSuffix(label, endingDot+zone)
 		if labelStripped != "" {
